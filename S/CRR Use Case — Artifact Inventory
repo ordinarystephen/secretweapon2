@@ -1,0 +1,95 @@
+
+Cloud
+/
+Claude finished the response
+
+Message collapsed
+
+Message collapsed
+Good list already — you've covered the content assets. Here's what I'd add, working on the assumption that CRR is Credit Risk Review and the platform is doing AI-assisted workpaper drafting (your artifact list reads that way — tell me if I've got the acronym wrong).
+
+Content & grounding (extends your list)
+
+Gold-standard exemplar workpapers — a small set of sanitized "this is what great looks like" examples per workpaper type. These do double duty: grounding material for the platform and a benchmark for judging its output.
+Canonical templates, annotated by section: which sections are system-drafted, which are analyst judgment, which are data-fed. Your ownership matrix says who owns content; this says where content comes from.
+Source data inventory — what systems/documents feed each workpaper section (loan system, spreads, appraisals, credit agreements) and how they're accessed. IT will need this and probably assumed you'd provide it.
+Glossary and definitions — risk rating definitions, regulatory classification definitions (pass, special mention, substandard), house acronyms. Institution-specific vocabulary is where drafting tools stumble first.
+For the policy corpus: not just the listing, but the operating model — versioning, effective dates, and who refreshes it. A stale corpus quietly produces confidently wrong drafts.
+Quality & acceptance
+
+Definition of done / acceptance criteria per workpaper type — your review standards say what good work is; this says when a draft is usable.
+An evaluation rubric with an error severity taxonomy. A misstated borrower financial and a style deviation are both "errors" but need very different responses.
+A golden test set for UAT — real, sanitized cases with known-correct outcomes. The end-user walkthrough you're writing will feed the UAT scripts, so build them together.
+Governance (the part banks get examined on)
+
+The AI/model-risk documentation your risk function will want from you as the use-case owner: use-case risk assessment, description of human-in-the-loop controls, what the reviewer must verify and attest to before a workpaper is final.
+Records retention and audit trail requirements for workpapers produced this way.
+If examiners will look at this, a mapping to the Interagency Guidance on Credit Risk Review Systems showing the platform doesn't weaken independence or coverage.
+Adoption & operating model
+
+Baseline metrics captured now — time per workpaper, rework/re-review rates — or you'll never be able to prove the platform helped.
+A pilot group and a feedback/triage loop for bad outputs, so problems route somewhere instead of into hallway grumbling.
+A shared-vs-tenant decision log: which assets are platform-wide (house style, maybe) versus CRR-owned (review standards, definitely). The other two tenants will force this question eventually; better to decide it deliberately.
+Requirements traceability from your CRR needs to what the BRD actually covers, so gaps surface before UAT rather than during it.
+An ownership-and-cadence assignment for every artifact on this list. Style guides and ownership matrices rot fast without a named owner and refresh cycle.
+The Sentinel project attached to this session is empty — want me to turn this into a working artifact inventory/tracker there (with owner, status, and priority per item), so it becomes the checklist you work from? I can also start the CRR end-user walkthrough skeleton whenever you're ready.
+
+okay so what I want is a matrix created, incorporating what I provided in my initial prompt, that breaks items down by category (content & grounding, quality & accpetance, etc.), item, and short description. Im going to transcribe this into a spreadsheet im going to use internally to track where im at assembling all this shit.
+
+
+Updated tasks, used 2 tools, used a skill
+Updated tasks, used 2 tools, used a skill
+The matrix is done — and since you were going to transcribe it into a spreadsheet anyway, I built it as one: crr_artifact_inventory.xlsx, delivered above. It has all 23 items (yours flagged in the Notes column) across the five categories, with Category / Item / Description filled in and blank Status, Owner, Priority, and Target Date columns ready for tracking — Status and Priority have dropdowns, and the header row has filters and freeze panes.
+
+I also saved a markdown copy of the inventory to the Sentinel project so it's on hand in future sessions. If you'd rather have this as a plain table to paste into an existing tracker, say the word and I'll drop it in that format.
+
+
+Crr artifact inventory
+Spreadsheet · XLSX 
+
+Crr artifact inventory
+Document · MD 
+
+
+
+
+Claude is AI and can make mistakes. Please double-check responses. Give us feedback
+
+
+Crr artifact inventory · MD
+# CRR Use Case — Artifact Inventory (Sentinel shared capability platform)
+ 
+Working inventory of artifacts Steve is creating/gathering for the Credit Risk Review (CRR) tenant. Tracked in Steve's internal spreadsheet (crr_artifact_inventory.xlsx, delivered 2026-08-20). Items marked ✦ were on Steve's initial list.
+ 
+## Process & Training
+- ✦ **CRR end-user process walkthrough** — Step-by-step guide showing how a CRR analyst uses the platform end-to-end: initiating a workpaper, reviewing and editing drafts, finalizing and routing for review. (Primary near-term deliverable.)
+- **Quick reference guides / FAQ** — One-page job aids distilled from the walkthrough for day-to-day use after training.
+## Content & Grounding
+- ✦ **Workpaper type inventory & content ownership matrix** — Catalog of every CRR workpaper type, by section, with owning team/role for each content area.
+- ✦ **House style writing guide** — Voice, tone, terminology, and formatting conventions all drafts must follow.
+- ✦ **Policy reference corpus & mapping** — At minimum, which policies apply to which workpaper types; ideally the full versioned corpus.
+- **Policy corpus operating model** — Who refreshes the corpus, on what cadence, with version and effective-date control.
+- **Gold-standard exemplar workpapers** — Sanitized examples of excellent completed workpapers per type; grounding material and QA benchmark.
+- **Canonical annotated templates** — Official template per type, annotated by section: system-drafted vs. analyst judgment vs. data-fed.
+- **Source data inventory** — Systems/documents feeding each workpaper section (loan system, spreads, appraisals, credit agreements) and how each is accessed.
+- **Glossary & definitions** — Risk rating definitions, regulatory classifications, house acronyms.
+## Quality & Acceptance
+- ✦ **Workpaper review standards** — Standards completed workpapers are reviewed against.
+- **Definition of done / acceptance criteria** — Per workpaper type, what a platform draft must meet before an analyst works from it.
+- **Evaluation rubric & error severity taxonomy** — Scoring framework for output quality, with error classes ranked by severity.
+- **Golden test set** — Sanitized real cases with known-correct outcomes for UAT and regression checking.
+- **UAT plan & test scripts** — Test scenarios for the CRR use case, derived from the process walkthrough.
+## Governance & Compliance
+- **AI / model risk use-case documentation** — Use-case risk assessment, human-in-the-loop control description, reviewer attestation requirements.
+- **Records retention & audit trail requirements** — How platform-produced workpapers are retained and what audit trail must exist.
+- **Regulatory guidance mapping** — Mapping to the Interagency Guidance on Credit Risk Review Systems (independence and coverage preserved).
+## Adoption & Operating Model
+- **Baseline metrics capture** — Pre-launch time-per-workpaper and rework/re-review rates, to demonstrate impact later.
+- **Pilot group & feedback loop** — Named pilot users plus a triage process for routing bad outputs to fixes.
+- **Shared-vs-tenant asset decision log** — Which assets are platform-wide vs. CRR-owned, coordinated with the other two tenants.
+- **BRD requirements traceability matrix** — CRR requirements mapped to BRD coverage so gaps surface before UAT.
+- **Artifact ownership & refresh cadence** — Named owner and update cycle for every artifact in this inventory.
+---
+Context: IT holds the BRD for the shared capability platform; CRR is one of three tenant use cases. Next major deliverable: the CRR end-user process walkthrough.
+ 
+Downloaded crr_artifact_inventory.xlsx Show in Finder
