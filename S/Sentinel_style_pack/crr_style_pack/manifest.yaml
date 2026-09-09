@@ -1,0 +1,44 @@
+# CRR Style Pack manifest
+# The standards_version is what a Sentinel ruling records alongside the question,
+# positions, and evidence. Bump it on every change to any file in the pack.
+
+pack: crr-house-style
+standards_version: "0.1.0-draft"
+effective_date: null            # set when adopted
+owner: "Credit Risk Review, Analytics"
+approved_by: null               # team / RIC sign-off record
+derived_from:
+  adjudication_workbook: "crr_style_adjudication_v0.xlsx"   # illustrative name
+  aggregate_report_run: null    # run id of the corpus run the evidence came from
+  corpus_papers: null           # count of papers in that run
+applies_to:
+  workpaper_types: [leveraged_lending_target_review]        # extend per decomposition
+  review_types: [target, thematic]
+
+files:
+  - path: structure.yaml
+    schema: schemas/structure.schema.json
+  - path: terminology.yaml
+    schema: schemas/terminology.schema.json
+  - path: assessment_language.yaml
+    schema: schemas/assessment_language.schema.json
+  - path: evidence_conventions.yaml
+    schema: schemas/evidence_conventions.schema.json
+  - path: writing_rules.yaml
+    schema: schemas/writing_rules.schema.json
+  - path: lexicons.yaml
+    schema: schemas/lexicons.schema.json
+  - path: exemplars.yaml
+    schema: schemas/exemplars.schema.json
+
+consumers:
+  prompt_assembly: [structure, terminology, assessment_language, evidence_conventions, writing_rules]
+  linter: [writing_rules, lexicons, terminology, assessment_language]
+  ui_standard_applied: [assessment_language, evidence_conventions, writing_rules]
+  knowledge_graph: [terminology, structure]
+  word_guide_generator: [all]
+
+changelog:
+  - version: "0.1.0-draft"
+    date: "2026-09-08"
+    note: "Skeleton with illustrative entries. No adjudicated content."

@@ -1,0 +1,148 @@
+# Terminology: one entry per concept. This file is also the seed of the ontology.
+# variant.status: preferred | acceptable | avoid | pending_adjudication
+# acronym_rule: expand_on_first_use | never_expand | always_expand
+
+defaults:
+  acronym_rule: expand_on_first_use
+  first_use_format: "{expansion} ({acronym})"
+
+concepts:
+  - id: TERM-001
+    canonical: "primary source of repayment"
+    kind: term
+    acronym: PSOR
+    variants:
+      - {text: "primary source of repayment", status: preferred}
+      - {text: "PSOR", status: acceptable, note: "after first-use expansion"}
+      - {text: "primary repayment source", status: pending_adjudication}
+    definition: "The cash flow or asset the credit team identifies as the expected source of debt service."
+    source: {document: "5-G-006360", section: null}
+    relations:
+      broader: [TERM-REPAYMENT]
+      related: [TERM-002]
+      used_in: [SEC-UW]
+    scope: all
+    status: adopted
+    provenance:
+      workbook_row: null
+      evidence: {n_papers: null, n_occurrences: null, sections: [SEC-UW]}
+
+  - id: TERM-002
+    canonical: "secondary source of repayment"
+    kind: term
+    acronym: SSOR
+    variants:
+      - {text: "secondary source of repayment", status: preferred}
+      - {text: "SSOR", status: acceptable}
+    definition: "The fallback source of repayment if the primary source fails, typically collateral or refinancing."
+    source: {document: "5-G-006360", section: null}
+    relations: {broader: [TERM-REPAYMENT], related: [TERM-001], used_in: [SEC-UW]}
+    scope: all
+    status: adopted
+    provenance: {workbook_row: null, evidence: {n_papers: null, n_occurrences: null}}
+
+  - id: TERM-003
+    canonical: "credit watchlist"
+    kind: term
+    acronym: CWL
+    variants:
+      - {text: "credit watchlist", status: preferred}
+      - {text: "CWL", status: acceptable}
+      - {text: "watchlist", status: acceptable, note: "only after the full term has appeared"}
+      - {text: "watch list", status: avoid}
+    definition: "The list of obligors under heightened monitoring per Global CWL Criteria."
+    source: {document: "1-G-012756", section: "4.2"}
+    relations: {used_in: [SEC-PM], governed_by: ["1-G-012756"]}
+    scope: all
+    status: adopted
+    provenance: {workbook_row: null, evidence: {n_papers: null, n_occurrences: null}}
+
+  - id: TERM-004
+    canonical: "Commercial Committee memo"
+    kind: document
+    acronym: "ComCo Memo"
+    variants:
+      - {text: "ComCo Memo", status: preferred, note: "house convention; the expansion is rarely written"}
+      - {text: "Commercial Committee memo", status: acceptable}
+      - {text: "committee memo", status: avoid}
+    definition: "The credit approval memorandum presented to the Commercial Committee."
+    source: {document: "5-P-000247", section: null}
+    relations: {kind_of: [TERM-APPROVAL-DOC], used_in: [SEC-BCO, SEC-UW]}
+    acronym_rule: never_expand
+    scope: all
+    status: pending_adjudication
+    provenance: {workbook_row: null, evidence: {n_papers: null, n_occurrences: null}}
+
+  - id: TERM-005
+    canonical: "UBS Adjusted EBITDA"
+    kind: metric
+    variants:
+      - {text: "UBS Adjusted EBITDA", status: preferred}
+      - {text: "adjusted EBITDA", status: acceptable, note: "when the UBS basis is already established"}
+      - {text: "EBITDA adjustments", status: acceptable, note: "refers to the adjustments, not the metric"}
+    definition: "EBITDA after the credit team's adjustments for non-cash and non-recurring items."
+    source: {document: "5-G-006360", section: "8.4"}
+    relations:
+      narrower_of: [TERM-EBITDA]
+      related: [TERM-006, TERM-007]
+      used_in: [SEC-FIN]
+    scope: [SEC-FIN, GRID-FIN]
+    status: adopted
+    provenance: {workbook_row: null, evidence: {n_papers: null, n_occurrences: null}}
+
+  - id: TERM-006
+    canonical: "UBS Expected Case"
+    kind: scenario
+    variants:
+      - {text: "UBS Expected Case", status: preferred}
+      - {text: "Expected Case", status: acceptable}
+      - {text: "base case", status: avoid, note: "ambiguous with management case"}
+    definition: "The credit team's central projection scenario."
+    source: {document: "5-G-006360", section: null}
+    relations: {sibling: [TERM-007], used_in: [SEC-FIN]}
+    scope: all
+    status: adopted
+    provenance: {workbook_row: null, evidence: {n_papers: null, n_occurrences: null}}
+
+  - id: TERM-007
+    canonical: "UBS Downside Case"
+    kind: scenario
+    variants:
+      - {text: "UBS Downside Case", status: preferred}
+      - {text: "Downside Case", status: acceptable}
+      - {text: "stress case", status: avoid}
+    definition: "The credit team's adverse projection scenario."
+    source: {document: "5-G-006360", section: null}
+    relations: {sibling: [TERM-006], used_in: [SEC-FIN]}
+    scope: all
+    status: adopted
+    provenance: {workbook_row: null, evidence: {n_papers: null, n_occurrences: null}}
+
+  - id: TERM-008
+    canonical: "workpaper"
+    kind: colloquialism
+    variants:
+      - {text: "workpaper", status: preferred}
+      - {text: "work paper", status: avoid}
+      - {text: "linecard", status: avoid, note: "colloquial; understood but not written"}
+    definition: "The CRR review work product for a single obligor or counterparty."
+    source: {document: "1-G-007544", section: null}
+    relations: {has_parts: [SEC-BCO, SEC-FIN, SEC-UW, SEC-PM, SEC-RR, SEC-TRD]}
+    scope: all
+    status: adopted
+    provenance: {workbook_row: null, evidence: {n_papers: null, n_occurrences: null}}
+
+  - id: TERM-009
+    canonical: "review"
+    kind: term
+    senses:                     # same word, different meaning by context
+      - {sense: "CRR review", context: "CRR as actor; the engagement this workpaper belongs to", preferred_text: "CRR review"}
+      - {sense: "credit team periodic review", context: "the credit team's Annual or Quarterly Review of the obligor", preferred_text: "Annual Review | Quarterly Review"}
+    variants:
+      - {text: "the review", status: avoid, note: "ambiguous between senses; name which"}
+    scope: all
+    status: pending_adjudication
+    provenance: {workbook_row: null, evidence: {n_papers: null, n_occurrences: null}}
+
+# Candidate intake: entries promoted from terminology_candidates.csv land here with status
+# pending_adjudication and kind set by the reviewer.

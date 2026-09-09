@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crr-style-pack/writing_rules",
+  "title": "CRR Style Pack: writing rules",
+  "type": "object",
+  "required": ["rules"],
+  "properties": {
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "statement", "enforcement", "scope", "measurable", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string", "pattern": "^RULE-W[0-9]{2,3}$"},
+          "title": {"type": "string", "maxLength": 80},
+          "statement": {"type": "string"},
+          "enforcement": {"enum": ["must", "should", "info"]},
+          "scope": {
+            "oneOf": [
+              {"const": "all"},
+              {"type": "array", "items": {"type": "string", "pattern": "^(SEC-[A-Z]+|GRID-[A-Z]+|grid|all)$"}, "minItems": 1}
+            ]
+          },
+          "measurable": {"type": "boolean"},
+          "metric": {"type": "string"},
+          "check": {"type": "string"},
+          "threshold": {
+            "type": "object",
+            "required": ["operator", "value"],
+            "properties": {
+              "operator": {"enum": ["eq", "lte", "gte", "lt", "gt"]},
+              "value": {"type": ["number", "null"]}
+            }
+          },
+          "secondary_metric": {"type": "object"},
+          "exemptions": {"type": "array", "items": {"type": "string"}},
+          "status": {"enum": ["adopted", "pending_adjudication", "retired"]},
+          "provenance": {
+            "type": "object",
+            "properties": {
+              "workbook_row": {"type": ["string", "integer", "null"]},
+              "evidence": {"type": "object"}
+            }
+          }
+        },
+        "if": {"properties": {"measurable": {"const": true}}},
+        "then": {"required": ["metric"]}
+      }
+    }
+  }
+}

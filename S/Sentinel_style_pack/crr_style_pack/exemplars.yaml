@@ -1,0 +1,29 @@
+# Exemplars: pointers to representative units, chosen by the deterministic
+# representativeness score in the corpus run. No text is stored here; the consumer
+# resolves unit ids against the sanitized exemplar store. "Representative" is the only
+# label used.
+
+source_run: null            # aggregate run id
+selection_method: "representativeness score v1 (composition distance, top-k topic coverage, canonical constructions)"
+
+by_section:
+  - section: SEC-FIN
+    review_type: target
+    candidates:
+      - {unit_id: "REF-XXXX:section:financials", rank: 1, score: null, reasons: [composition_within_iqr, top_topics_8_of_8, canonical_constructions_high]}
+      - {unit_id: "REF-YYYY:section:financials", rank: 2, score: null, reasons: []}
+      - {unit_id: "REF-ZZZZ:section:financials", rank: 3, score: null, reasons: []}
+    sme_review: {status: pending, approved_unit_id: null, note: null}
+
+  - section: SEC-UW
+    review_type: target
+    candidates: []
+    sme_review: {status: pending, approved_unit_id: null, note: null}
+
+by_grid_topic_and_rating:
+  # one representative justification per topic per rating, for the rating_language chapter
+  - {grid_topic: GRID-FIN, rating: Satisfactory, unit_id: null, sme_review: {status: pending}}
+  - {grid_topic: GRID-FIN, rating: Needs_Improvement, unit_id: null, sme_review: {status: pending}}
+
+by_paper:
+  - {review_type: target, unit_id: "REF-XXXX", rank: 1, score: null, sme_review: {status: pending}}

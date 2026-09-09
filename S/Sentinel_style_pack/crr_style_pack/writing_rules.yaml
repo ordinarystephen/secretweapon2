@@ -1,0 +1,146 @@
+# Writing rules: the prescriptive standard. Each rule is measurable or not; measurable
+# rules carry the metric and a threshold. Thresholds marked null are set after the
+# guideline baseline shows where current papers sit.
+# enforcement: must | should | info
+
+rules:
+  - id: RULE-W01
+    title: "Bottom line on top"
+    statement: "The conclusion is the first sentence of a CRR Assessment subsection and of every grid justification."
+    enforcement: must
+    scope: [SEC-FIN, SEC-UW, SEC-PM, SEC-RR, SEC-TRD, grid]
+    measurable: true
+    metric: conclusion_position
+    check: "first sentence of the unit contains an assessment act (see assessment_language)"
+    threshold: {operator: eq, value: 1}
+    status: adopted
+
+  - id: RULE-W02
+    title: "Main point first in every paragraph"
+    statement: "The first sentence of a paragraph states its point; the rest develops it."
+    enforcement: should
+    scope: all
+    measurable: true
+    metric: paragraph_lead_ratio
+    check: "share of paragraphs whose first sentence is shorter than the paragraph mean"
+    threshold: {operator: gte, value: null}   # set from baseline
+    status: adopted
+
+  - id: RULE-W03
+    title: "Active voice"
+    statement: "Assessments and findings are written in active voice with a named actor."
+    enforcement: should
+    scope: all
+    measurable: true
+    metric: passive_rate
+    threshold: {operator: lte, value: null}   # set from baseline; expected well under 0.20
+    exemptions: ["descriptions of events where the actor is unknown or irrelevant"]
+    status: adopted
+
+  - id: RULE-W04
+    title: "One idea per sentence"
+    statement: "A sentence introduces one idea."
+    enforcement: should
+    scope: all
+    measurable: true
+    metric: clauses_per_sentence_mean
+    threshold: {operator: lte, value: null}
+    secondary_metric: {metric: words_per_sentence_p90, threshold: {operator: lte, value: null}}
+    status: adopted
+
+  - id: RULE-W05
+    title: "Acronyms expanded on first use"
+    statement: "An acronym is expanded the first time it appears in the workpaper body, unless terminology.yaml sets never_expand."
+    enforcement: must
+    scope: all
+    measurable: true
+    metric: acronym_first_use_defined
+    threshold: {operator: eq, value: 1.0}
+    status: adopted
+
+  - id: RULE-W06
+    title: "No vague quantifiers"
+    statement: "Vague terms (see lexicons.vague_terms) are replaced with a number, a range, or a comparison."
+    enforcement: should
+    scope: all
+    measurable: true
+    metric: vague_term_hits_per_100_words
+    threshold: {operator: lte, value: null}
+    status: adopted
+
+  - id: RULE-W07
+    title: "Quantify where possible"
+    statement: "A claim about size, change, or headroom carries a figure."
+    enforcement: should
+    scope: [SEC-FIN, SEC-PM, SEC-RR]
+    measurable: true
+    metric: numeric_density
+    threshold: {operator: gte, value: null}
+    status: adopted
+
+  - id: RULE-W08
+    title: "Short words"
+    statement: "Prefer the short word: use, not utilize; start, not commence; about, not approximately."
+    enforcement: info
+    scope: all
+    measurable: true
+    metric: long_word_substitutions
+    check: "hits against lexicons.short_word_substitutions"
+    status: adopted
+
+  - id: RULE-W09
+    title: "No hedging in conclusions"
+    statement: "A conclusion sentence carries no hedge (see assessment_language.hedging)."
+    enforcement: should
+    scope: all
+    measurable: true
+    metric: hedges_in_conclusion_sentences
+    threshold: {operator: eq, value: 0}
+    status: adopted
+
+  - id: RULE-W10
+    title: "Free from inconsistencies"
+    statement: "A grid justification's claims are supported by the matching section; figures repeated across sections agree."
+    enforcement: must
+    scope: [grid]
+    measurable: true
+    metric: grid_section_support_rate
+    threshold: {operator: gte, value: null}   # baseline from consistency report
+    status: adopted
+
+  - id: RULE-W11
+    title: "Numbers: sensible order, close comparisons, rounded"
+    statement: "Present figures in a consistent order (current then prior), keep the compared figures in the same sentence, and round to the precision the reader needs."
+    enforcement: should
+    scope: all
+    measurable: false
+    status: adopted
+
+  - id: RULE-W12
+    title: "Skim friendly"
+    statement: "Subsection headings follow structure.yaml; enumerations use (i), (ii), (iii); labeled lead-ins such as '2Q26 Financials:' are used for period blocks."
+    enforcement: should
+    scope: all
+    measurable: false
+    status: adopted
+
+  - id: RULE-W13
+    title: "Clear voice"
+    statement: "CRR is the actor; no 'we', no impersonal 'it is assessed'."
+    enforcement: should
+    scope: all
+    measurable: true
+    metric: actor_form_violations
+    check: "hits against assessment_language.conventions.actor_forms.avoid"
+    threshold: {operator: eq, value: 0}
+    status: adopted
+
+  - id: RULE-W14
+    title: "No flowery language"
+    statement: "No intensifiers or ornamental adjectives (see lexicons.ornamental)."
+    enforcement: should
+    scope: all
+    measurable: true
+    metric: ornamental_hits
+    threshold: {operator: eq, value: 0}
+    status: adopted

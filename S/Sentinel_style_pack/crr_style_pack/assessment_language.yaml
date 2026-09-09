@@ -1,0 +1,127 @@
+# Assessment language: how CRR states what it concludes.
+# Part 1: one entry per assessment act (the "concept" tag from the extraction).
+# Part 2: how language shifts by rating.
+# construction.status: preferred | acceptable | avoid | pending_adjudication
+
+conventions:
+  actor: "CRR"                         # CRR is the grammatical subject of assessments
+  actor_forms:
+    preferred: "CRR"
+    avoid: ["we", "the reviewer", "the review team", "it is assessed that"]
+  tense: present                       # assessments in present tense; events in past
+  person: third
+
+assessment_acts:
+  - id: ASSESS-CONCUR
+    act: concur
+    meaning: "CRR agrees with the credit team's analysis or conclusion."
+    constructions:
+      - {text: "CRR concurs with {object}", status: preferred, verb_lemma: concur}
+      - {text: "CRR agrees with {object}", status: pending_adjudication, verb_lemma: agree}
+      - {text: "CRR is in agreement with {object}", status: avoid, verb_lemma: agree, reason: "wordier form of the same act"}
+      - {text: "CRR does not disagree with {object}", status: avoid, reason: "double negative"}
+    object_examples: ["the credit team's EBITDA adjustments", "the assigned regulatory classification"]
+    scope: all
+    enforcement: should
+    status: pending_adjudication
+    provenance:
+      workbook_row: null
+      evidence: {variants_observed: null, authors_split: null}
+
+  - id: ASSESS-NOTE
+    act: note_observation
+    meaning: "CRR records a fact or observation without asserting a deficiency."
+    constructions:
+      - {text: "CRR notes that {clause}", status: preferred, verb_lemma: note}
+      - {text: "CRR observes that {clause}", status: pending_adjudication, verb_lemma: observe}
+      - {text: "It is noted that {clause}", status: avoid, reason: "passive, no actor"}
+    scope: all
+    enforcement: should
+    status: pending_adjudication
+    provenance: {workbook_row: null, evidence: {variants_observed: null, authors_split: null}}
+
+  - id: ASSESS-ADEQUATE
+    act: assess_adequate
+    meaning: "CRR judges an element sufficient, supported, or appropriate."
+    constructions:
+      - {text: "CRR assesses {object} as {adequate|appropriate|sufficiently supported}", status: preferred, verb_lemma: assess}
+      - {text: "CRR considers {object} to be {adjective}", status: acceptable, verb_lemma: consider}
+      - {text: "{object} appears {adjective}", status: avoid, reason: "hedged where a judgment is required"}
+    scope: all
+    enforcement: should
+    status: pending_adjudication
+    provenance: {workbook_row: null, evidence: {variants_observed: null, authors_split: null}}
+
+  - id: ASSESS-FLAG
+    act: flag_issue
+    meaning: "CRR identifies a deficiency, gap, or exception."
+    constructions:
+      - {text: "CRR identified {issue}", status: preferred, verb_lemma: identify}
+      - {text: "CRR notes a gap in {object}", status: acceptable, verb_lemma: note}
+      - {text: "{object} may indicate {issue}", status: avoid, reason: "an identified issue is stated, not hedged"}
+    required_elements: [what_was_expected, what_was_found, policy_reference_if_any]
+    scope: all
+    enforcement: must
+    status: pending_adjudication
+    provenance: {workbook_row: null, evidence: {variants_observed: null, authors_split: null}}
+
+  - id: ASSESS-LIMIT
+    act: limitation_or_preclusion
+    meaning: "CRR states that an assessment could not be made and why."
+    constructions:
+      - {text: "CRR's assessment of {object} is precluded by {reason}", status: preferred, verb_lemma: preclude}
+      - {text: "CRR was unable to assess {object} because {reason}", status: acceptable}
+      - {text: "{object} could not be reviewed", status: avoid, reason: "no actor, no reason"}
+    required_elements: [what_could_not_be_assessed, reason, what_would_resolve_it]
+    scope: all
+    enforcement: must
+    status: pending_adjudication
+    provenance: {workbook_row: null, evidence: {variants_observed: null, authors_split: null}}
+
+  - id: ASSESS-ATTRIB
+    act: attribute_to_source
+    meaning: "CRR reports a position held by the credit team or a document, not its own."
+    constructions:
+      - {text: "The credit team {states|projects|expects} {clause}", status: preferred}
+      - {text: "Per the {document}, {clause}", status: acceptable}
+      - {text: "It is expected that {clause}", status: avoid, reason: "whose expectation is unclear"}
+    scope: all
+    enforcement: should
+    status: pending_adjudication
+    provenance: {workbook_row: null, evidence: {variants_observed: null, authors_split: null}}
+
+hedging:
+  allowed:
+    - {text: "appears to", when: "reporting an inference from incomplete evidence, never in a conclusion sentence"}
+    - {text: "may", when: "stating a forward-looking risk"}
+  avoid:
+    - {text: "seems", reason: "guideline: no hedging in conclusions"}
+    - {text: "tends to", reason: "vague"}
+    - {text: "probably", reason: "quantify or drop"}
+  rule: "A conclusion sentence (the first sentence under CRR Assessment, and every grid justification) carries no hedge."
+  enforcement: should
+  status: pending_adjudication
+
+rating_language:
+  # How the register shifts by grid rating. Filled from the rating-conditioned language report.
+  - rating: Satisfactory
+    expected_acts: [concur, assess_adequate, note_observation]
+    justification_shape: "One to two sentences: the conclusion, then the principal support."
+    issue_introduction: null
+    hedge_density: {max_per_100_words: null}   # from corpus baseline
+    example_pattern: "CRR concurs with {object}; {support}."
+    status: pending_adjudication
+  - rating: Needs_Improvement
+    expected_acts: [flag_issue, assess_adequate, concur]
+    justification_shape: "Conclusion first, then the identified gap with what was expected versus found, then any mitigant."
+    issue_introduction: {preferred: "CRR identified {issue}", position: first_or_second_sentence}
+    hedge_density: {max_per_100_words: null}
+    example_pattern: "CRR identified {issue}. {expected} {found}. {mitigant_if_any}."
+    status: pending_adjudication
+  - rating: Unsatisfactory
+    expected_acts: [flag_issue]
+    justification_shape: "Conclusion first, each deficiency enumerated (i), (ii), (iii), policy reference for each."
+    issue_introduction: {preferred: "CRR identified {issue}", position: first_sentence}
+    hedge_density: {max_per_100_words: 0}
+    example_pattern: "CRR identified (i) {issue}; (ii) {issue}; (iii) {issue}."
+    status: pending_adjudication

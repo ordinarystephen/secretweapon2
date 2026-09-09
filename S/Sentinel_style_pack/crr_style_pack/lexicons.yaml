@@ -1,0 +1,66 @@
+# Lexicons: small word lists the linter consults. Edited freely by the team; no ids needed
+# beyond the list name. Keep entries lowercase; matching is case-insensitive, word-boundary.
+
+vague_terms:
+  # RULE-W06. "material" is excluded because "material risk" is a term of art.
+  - significant
+  - considerable
+  - appreciable
+  - substantial
+  - meaningful
+  - notable
+  - somewhat
+  - relatively
+  - fairly
+  - adequate           # pending_adjudication: used as a term in "adequate coverage"?
+  - a number of
+  - various
+
+ornamental:
+  # RULE-W14
+  - very
+  - extremely
+  - highly
+  - robust
+  - strong momentum
+  - impressive
+  - remarkable
+  - solid
+
+hedges_avoid:
+  # mirrors assessment_language.hedging.avoid; kept here for the linter
+  - seems
+  - seem to
+  - tends to
+  - probably
+  - perhaps
+  - arguably
+
+short_word_substitutions:
+  # RULE-W08. left: avoid, right: use
+  utilize: use
+  utilization: use
+  commence: start
+  approximately: about
+  in order to: to
+  prior to: before
+  subsequent to: after
+  in the event that: if
+  with respect to: on
+  demonstrate: show
+  facilitate: help
+  in excess of: over
+
+actor_forms_avoid:
+  # RULE-W13; mirrors assessment_language.conventions.actor_forms.avoid
+  - we
+  - our
+  - the reviewer
+  - the review team
+  - it is assessed that
+  - it is noted that
+  - it was observed that
+
+banned_phrases:
+  # things the team decides never appear; empty until adjudicated
+  []

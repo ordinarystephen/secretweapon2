@@ -1,0 +1,135 @@
+# Workpaper structure: what each register and section is for, and what it must contain.
+# Length and figure envelopes are filled from the aggregate report's composition metrics
+# (median and interquartile range), not invented.
+
+rating_scale:
+  # Discovered from the corpus by the rating normalizer; confirm with the SME.
+  values: [Satisfactory, Needs_Improvement, Unsatisfactory]   # illustrative
+  aliases:
+    Satisfactory: ["Sat", "Satisfactory."]
+    Needs_Improvement: ["Needs Improvement", "NI"]
+  status: pending_adjudication
+
+grid:
+  name: "Credit Analysis Topics"
+  row_fields: [topic, rating, justification]
+  justification_envelope:
+    words: {median: null, p25: null, p75: null}   # from corpus run
+  topics:
+    - id: GRID-FIN
+      label: "Financial Analysis"
+      maps_to_section: SEC-FIN
+    - id: GRID-UW
+      label: "Underwriting & Documentation"
+      maps_to_section: SEC-UW
+    - id: GRID-PM
+      label: "Portfolio Management"
+      maps_to_section: SEC-PM
+    - id: GRID-RR
+      label: "Risk Rating"
+      maps_to_section: SEC-RR
+    - id: GRID-TRD
+      label: "Trading Activity"
+      maps_to_section: SEC-TRD
+      applicability: "not applicable to leveraged loans"
+
+sections:
+  - id: SEC-BCO
+    order: 1
+    title: "Borrower / Counterparty & Relationship Overview"
+    purpose: "Establish who the obligor is, the UBS relationship, and the transaction under review."
+    subsections:
+      - {heading: "Counterparty Overview", requirement: required}
+      - {heading: "Recent Developments", requirement: required}
+      - {heading: "External Credit Ratings & Outlook", requirement: required}
+      - {heading: "Transaction Description", requirement: required}
+      - {heading: "Capitalization", requirement: required}
+    answers_questions:            # ids from the decomposition question inventory
+      - Q-BCO-01   # obligor, country, industry, sub-segment, time in business
+      - Q-BCO-02   # sponsor ownership and tenure
+      - Q-BCO-03   # transaction types with UBS
+      - Q-BCO-04   # leveraged loan identification per 5-G-006360 p.8
+    expected_topics: [company_overview, sponsor, external_ratings, transaction_terms, pro_forma_capitalization, pro_forma_leverage]
+    envelope:
+      words: {median: null, p25: null, p75: null}
+      figures: {median: null}
+      tables: {median: null}
+    conclusion_required: false
+
+  - id: SEC-FIN
+    order: 2
+    title: "Financials"
+    purpose: "Evaluate the credit team's financial analysis and CRR's view of it."
+    subsections:
+      - {heading: "CRR Assessment", requirement: required, position: first}
+      - {heading: "Credit Team Financial Analysis", requirement: required}
+      - {heading: "Model Assessments", requirement: conditional, condition: "projection update triggers under 5-G-006360 s8.4"}
+      - {heading: "Financial Projections", requirement: required}
+      - {heading: "EV / Total Debt Coverage", requirement: required}
+    answers_questions: [Q-FIN-01, Q-FIN-02, Q-FIN-03, Q-FIN-04, Q-FIN-05]
+    expected_topics: [revenue, ebitda, ebitda_adjustments, free_cash_flow, leverage, liquidity, projections, debt_repayment_capacity, enterprise_value]
+    envelope:
+      words: {median: null, p25: null, p75: null}
+      figures: {median: null}
+      tables: {median: null}
+    conclusion_required: true
+    conclusion_position: first     # bottom line on top
+
+  - id: SEC-UW
+    order: 3
+    title: "Underwriting & Documentation"
+    purpose: "Assess transaction structure, credit analysis, sources of repayment, standards, and approvals."
+    subsections:
+      - {heading: "CRR Assessment", requirement: required, position: first}
+      - {heading: "Transaction Structure", requirement: required}
+      - {heading: "Credit Analysis", requirement: required}
+      - {heading: "Source of Repayment", requirement: required}
+      - {heading: "Underwriting Standards", requirement: required}
+      - {heading: "Credit Approval Authority", requirement: required}
+    answers_questions: [Q-UW-01, Q-UW-02, Q-UW-03, Q-UW-04, Q-UW-05, Q-UW-06]
+    expected_topics: [lmt_protection, psor, ssor, covenants, underwriting_exceptions, approval_authority]
+    envelope: {words: {median: null, p25: null, p75: null}, figures: {median: null}, tables: {median: null}}
+    conclusion_required: true
+    conclusion_position: first
+
+  - id: SEC-PM
+    order: 4
+    title: "Portfolio Management"
+    purpose: "Assess post-origination monitoring, covenant compliance, and watchlist treatment."
+    subsections:
+      - {heading: "CRR Assessment", requirement: required, position: first}
+      - {heading: "Post-Origination Monitoring", requirement: required}
+      - {heading: "Covenant Compliance", requirement: required}
+      - {heading: "Credit Watchlist", requirement: required}
+    answers_questions: [Q-PM-01, Q-PM-02, Q-PM-03, Q-PM-04]
+    expected_topics: [review_timeliness, covenant_compliance, watchlist_status]
+    envelope: {words: {median: null, p25: null, p75: null}, figures: {median: null}, tables: {median: null}}
+    conclusion_required: true
+    conclusion_position: first
+
+  - id: SEC-RR
+    order: 5
+    title: "Risk Rating Accuracy"
+    purpose: "Assess regulatory classification, triggers, PD, and LGD."
+    subsections:
+      - {heading: "CRR Assessment", requirement: required, position: first}
+      - {heading: "Regulatory Risk Rating Classification", requirement: required}
+      - {heading: "Risk Rating Triggers", requirement: required}
+      - {heading: "PD Rating", requirement: required}
+      - {heading: "LGD Rating", requirement: required}
+    answers_questions: [Q-RR-01, Q-RR-02, Q-RR-03, Q-RR-04, Q-RR-05]
+    expected_topics: [regulatory_classification, rating_triggers, pd_rating, lgd_rating, override_justification]
+    envelope: {words: {median: null, p25: null, p75: null}, figures: {median: null}, tables: {median: null}}
+    conclusion_required: true
+    conclusion_position: first
+
+  - id: SEC-TRD
+    order: 6
+    title: "Trading Activity and Exposure Analysis"
+    purpose: "Counterparty credit risk exposure analysis; not applicable to leveraged loans."
+    applicability: {workpaper_types: [counterparty_credit_risk]}
+    subsections: []
+    answers_questions: []
+    expected_topics: []
+    envelope: {words: {median: null, p25: null, p75: null}, figures: {median: null}, tables: {median: null}}
+    conclusion_required: true

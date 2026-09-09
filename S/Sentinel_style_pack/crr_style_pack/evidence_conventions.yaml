@@ -1,0 +1,96 @@
+# Evidence conventions: how claims are tied to sources.
+# One entry per source type (the enum from the extraction config).
+
+defaults:
+  date_required: true
+  date_format: "{Mon}-{YY} | {n}Q{YY} | FY{YY}"      # e.g. Jun-26, 2Q26, FY25
+  position: sentence_open                              # "Per the 2Q26 Quarterly Review, ..." preferred
+  figure_pointer: "see Figure {n}"
+  table_pointer: "see Table {n}"
+  pointer_adjacency: must                               # a pointer sits in the paragraph before or after its figure
+
+source_types:
+  - id: EVID-ANNUAL
+    source_type: annual_review
+    label_form: "{FY} Annual Review"
+    date_required: true
+    citation_examples: ["Per the FY25 Annual Review, ..."]
+    scope: all
+    enforcement: should
+    status: pending_adjudication
+    provenance: {workbook_row: null, evidence: {n_statements: null, dated_share: null}}
+
+  - id: EVID-QUARTERLY
+    source_type: quarterly_review
+    label_form: "{n}Q{YY} Quarterly Review"
+    date_required: true
+    citation_examples: ["The 2Q26 Quarterly Review reports ..."]
+    scope: all
+    enforcement: should
+    status: pending_adjudication
+    provenance: {workbook_row: null, evidence: {n_statements: null, dated_share: null}}
+
+  - id: EVID-COMCO
+    source_type: comco_memo
+    label_form: "ComCo Memo dated {date}"
+    date_required: true
+    citation_examples: ["The ComCo Memo dated Mar-26 identifies ..."]
+    scope: [SEC-BCO, SEC-UW]
+    enforcement: should
+    status: pending_adjudication
+    provenance: {workbook_row: null, evidence: {n_statements: null, dated_share: null}}
+
+  - id: EVID-AGENCY
+    source_type: rating_agency
+    label_form: "{Moody's|S&P} ({rating}, {outlook}, {date assigned})"
+    date_required: true
+    citation_examples: ["Moody's (B2, stable, assigned Jan-26)"]
+    scope: [SEC-BCO, SEC-RR]
+    enforcement: must
+    status: pending_adjudication
+    provenance: {workbook_row: null, evidence: {n_statements: null, dated_share: null}}
+
+  - id: EVID-COVENANT
+    source_type: covenant_compliance_certificate
+    label_form: "{period} compliance certificate"
+    date_required: true
+    citation_examples: ["Per the 2Q26 compliance certificate, ..."]
+    scope: [SEC-PM]
+    enforcement: should
+    status: pending_adjudication
+    provenance: {workbook_row: null, evidence: {n_statements: null, dated_share: null}}
+
+  - id: EVID-POLICY
+    source_type: internal_policy
+    label_form: "{doc id} s{section}"
+    date_required: false
+    citation_examples: ["per 5-G-006360 s8.4", "Annex F of 5-P-000247"]
+    scope: all
+    enforcement: must
+    note: "Every flagged issue that rests on a policy requirement cites the policy id and section."
+    status: pending_adjudication
+    provenance: {workbook_row: null, evidence: {n_statements: null, dated_share: null}}
+
+  - id: EVID-IRIS
+    source_type: iris_document
+    label_form: "{document name} (IRIS, {date})"
+    date_required: true
+    citation_examples: ["the executed credit agreement (IRIS, Mar-26)"]
+    scope: all
+    enforcement: should
+    status: pending_adjudication
+    provenance: {workbook_row: null, evidence: {n_statements: null, dated_share: null}}
+
+rules:
+  - id: EVID-R01
+    statement: "A quantitative claim names its source in the same sentence or the one before."
+    enforcement: must
+    scope: all
+  - id: EVID-R02
+    statement: "A figure or table is referenced in prose before it appears; no orphan figures."
+    enforcement: should
+    scope: all
+  - id: EVID-R03
+    statement: "Sources are named as the credit team names them, not paraphrased."
+    enforcement: should
+    scope: all
