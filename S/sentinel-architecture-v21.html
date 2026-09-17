@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sentinel — Architecture V2.1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f5f5f7; --surface:#ffffff; --ink:#1d1d1f; --muted:#6e6e73;
+  --hair:#e8e8ed; --hair-strong:#d2d2d7; --accent:#0071e3; --accent-soft:#eaf3ff;
+  --ctrl:#008577; --llm:#5856d6; --det:#6e6e73; --human:#248a3d; --store:#b25000;
+  --ctrl-bg:#e9f6f4; --llm-bg:#eeeefb; --det-bg:#f2f2f4; --human-bg:#eaf6ed; --store-bg:#faf0e6;
+  --shadow:0 1px 3px rgba(0,0,0,.04);
+  --serif:-apple-system, "SF Pro Display", "Inter", "Segoe UI", system-ui, sans-serif;
+  --sans:-apple-system, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#000000; --surface:#1c1c1e; --ink:#f5f5f7; --muted:#98989d;
+    --hair:#2c2c2e; --hair-strong:#3a3a3c; --accent:#2997ff; --accent-soft:#12283f;
+    --ctrl:#66d4cf; --llm:#7d7aff; --det:#98989d; --human:#30d158; --store:#ff9f0a;
+    --ctrl-bg:#12302e; --llm-bg:#222241; --det-bg:#232325; --human-bg:#15301e; --store-bg:#33260f;
+    --shadow:0 1px 3px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#000000; --surface:#1c1c1e; --ink:#f5f5f7; --muted:#98989d;
+  --hair:#2c2c2e; --hair-strong:#3a3a3c; --accent:#2997ff; --accent-soft:#12283f;
+  --ctrl:#66d4cf; --llm:#7d7aff; --det:#98989d; --human:#30d158; --store:#ff9f0a;
+  --ctrl-bg:#12302e; --llm-bg:#222241; --det-bg:#232325; --human-bg:#15301e; --store-bg:#33260f;
+  --shadow:0 1px 3px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} *{transition:none !important;animation:none !important} }
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+
+/* masthead */
+header{border-bottom:1px solid var(--hair)}
+.mast{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:28px 0 18px}
+.mast h1{font-family:var(--serif);font-weight:700;font-size:30px;letter-spacing:-.022em}
+.mast h1 span{color:var(--muted);font-weight:500;font-size:20px;margin-left:10px}
+.mast .sub{color:var(--muted);font-size:13.5px;margin-top:4px;max-width:60ch}
+.theme{border:1px solid var(--hair-strong);border-radius:999px;padding:5px 14px;font-size:12.5px;color:var(--muted)}
+.theme:hover{color:var(--ink);border-color:var(--muted)}
+
+/* tabs */
+nav{display:flex;gap:2px;overflow-x:auto}
+nav button{padding:12px 14px;font-size:13.5px;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap}
+nav button:hover{color:var(--ink)}
+nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+nav button:focus-visible,.node:focus-visible,.theme:focus-visible,.stepbtn:focus-visible,.commit>button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+main{padding:30px 0 80px}
+.pane{display:none}
+.pane.on{display:block}
+
+/* diagram layout: content + rail */
+.duo{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:28px;align-items:start}
+@media(max-width:1020px){.duo{grid-template-columns:1fr}}
+.rail{position:sticky;top:18px;border:1px solid var(--hair);background:var(--surface);border-radius:14px;padding:18px 18px 20px;box-shadow:var(--shadow)}
+@media(max-width:1020px){.rail{position:static}}
+.rail .kind{display:inline-block;font-size:11.5px;font-weight:600;letter-spacing:.02em;padding:2px 9px;border-radius:999px;margin-bottom:10px}
+.rail h3{font-family:var(--serif);font-weight:600;font-size:18px;margin-bottom:8px}
+.rail p{font-size:13.5px;color:var(--muted)}
+.rail p strong{color:var(--ink);font-weight:600}
+.rail .hint{margin-top:14px;padding-top:12px;border-top:1px solid var(--hair);font-size:12px;color:var(--muted)}
+
+/* bands + nodes */
+.band{border:1px solid var(--hair);border-radius:14px;background:var(--surface);padding:14px 16px 16px;box-shadow:var(--shadow)}
+.band + .band, .band + .joint, .joint + .band{margin-top:0}
+.bandtitle{display:flex;align-items:baseline;gap:10px;margin-bottom:11px}
+.bandtitle h4{font-family:var(--serif);font-size:15.5px;font-weight:600}
+.bandtitle small{color:var(--muted);font-size:12px}
+.nodes{display:grid;gap:10px}
+.node{display:block;text-align:left;border:1px solid var(--hair);border-radius:10px;padding:9px 12px 10px;background:var(--paper);transition:border-color .15s, box-shadow .15s}
+.node:hover{border-color:var(--hair-strong)}
+.node.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.node.lit{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);background:var(--accent-soft)}
+.node .nm{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:7px}
+.node .nm i{width:8px;height:8px;border-radius:50%;flex:none}
+.node .rl{font-size:11.5px;color:var(--muted);margin-top:2px;margin-left:15px}
+.k-ctrl i{background:var(--ctrl)} .k-llm i{background:var(--llm)} .k-det i{background:var(--det)}
+.k-human i{background:var(--human)} .k-store i{background:var(--store)}
+
+.joint{display:flex;justify-content:center;padding:7px 0;color:var(--muted)}
+.joint svg{display:block}
+.joint.pill{padding:9px 0}
+.pillbtn{border:1px dashed var(--hair-strong);border-radius:999px;padding:5px 16px;font-size:12px;color:var(--muted);background:var(--surface)}
+.pillbtn:hover{color:var(--ink);border-color:var(--muted)}
+.pillbtn.sel{color:var(--accent);border-color:var(--accent)}
+
+.seqrow{display:flex;flex-wrap:wrap;gap:8px}
+.seqrow .node{flex:1;min-width:170px}
+.seqarr{align-self:center;color:var(--muted);font-size:15px;padding:0 1px;user-select:none}
+.orsep{align-self:center;justify-self:center;font-size:11px;color:var(--muted);border:1px solid var(--hair);border-radius:999px;padding:2px 10px;white-space:nowrap}
+.bandnote{font-size:12px;color:var(--muted);margin-top:10px;max-width:80ch}
+.planestrip{display:flex;gap:6px;margin:0 0 10px}
+.planestrip span{flex:1;text-align:center;font-size:12px;color:var(--muted);border:1px solid var(--hair);border-radius:8px;padding:6px 4px;background:var(--surface);transition:color .15s,border-color .15s,background .15s}
+.planestrip [data-plane="ctrl"].on{color:var(--ctrl);border-color:var(--ctrl);background:var(--ctrl-bg);font-weight:600}
+.planestrip [data-plane="exec"].on{color:var(--llm);border-color:var(--llm);background:var(--llm-bg);font-weight:600}
+.planestrip [data-plane="data"].on{color:var(--store);border-color:var(--store);background:var(--store-bg);font-weight:600}
+.planestrip [data-plane="ing"].on{color:var(--human);border-color:var(--human);background:var(--human-bg);font-weight:600}
+.chips{margin-top:12px;padding-top:11px;border-top:1px solid var(--hair);display:flex;flex-wrap:wrap;gap:6px}
+.chiplbl{width:100%;font-size:11px;color:var(--muted)}
+.chip{font-size:11.5px;border:1px solid var(--hair-strong);border-radius:999px;padding:2px 10px;background:transparent;color:var(--muted)}
+.chip:hover{filter:brightness(.92)}
+.chip.p-ctrl{color:var(--ctrl);border-color:var(--ctrl)}
+.chip.p-exec{color:var(--llm);border-color:var(--llm)}
+.chip.p-data{color:var(--store);border-color:var(--store)}
+.chip.p-ing{color:var(--human);border-color:var(--human)}
+.chip.p-step{color:var(--accent);border-color:var(--accent)}
+.chipmore{font-size:11.5px;color:var(--muted);align-self:center}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:0 0 18px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:8px;height:8px;border-radius:50%}
+
+/* review flow specifics */
+.flowcol{display:flex;flex-direction:column}
+.flowcol .band{width:100%}
+.subchain{border-style:dashed}
+.loopnote{border-left:2px solid var(--store);background:var(--store-bg);border-radius:0 8px 8px 0;padding:10px 14px;margin-top:10px}
+.loopnote .node{background:transparent;border:none;padding:0}
+.loopnote .node:hover{border:none}
+.loopnote .node.sel .nm, .loopnote .node.lit .nm{color:var(--accent)}
+.loopnote .nm{font-size:12.5px}
+.loopnote .rl{font-size:11.5px}
+
+/* stepper */
+.stepper{display:flex;align-items:center;gap:12px;margin:0 0 18px;padding:10px 14px;border:1px solid var(--hair);border-radius:12px;background:var(--surface)}
+.stepbtn{border:1px solid var(--hair-strong);border-radius:6px;padding:5px 13px;font-size:12.5px}
+.stepbtn:hover{border-color:var(--muted)}
+.stepbtn[disabled]{opacity:.35;cursor:default}
+.stepper .where{font-size:12.5px;color:var(--muted);flex:1}
+.stepper .bar{height:2px;background:var(--hair);border-radius:2px;flex:2;overflow:hidden}
+.stepper .bar b{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+
+/* overview / commitments */
+.lede{max-width:74ch;margin-bottom:6px}
+.lede p{font-size:15px;margin-bottom:12px}
+.north{font-family:var(--serif);font-size:23px;font-weight:600;letter-spacing:-.015em;line-height:1.4;margin:26px 0 34px;max-width:52ch}
+.commits{border-top:1px solid var(--hair)}
+.commit{border-bottom:1px solid var(--hair)}
+.commit>button{width:100%;display:flex;align-items:baseline;gap:14px;text-align:left;padding:13px 4px}
+.commit .num{font-family:var(--serif);color:var(--muted);font-size:14px;min-width:22px}
+.commit .ttl{font-size:14.5px;font-weight:600;flex:1}
+.commit .body{display:none;padding:0 4px 15px 40px;color:var(--muted);font-size:13.5px;max-width:78ch}
+.commit.open .body{display:block}
+.commit>button::after{content:"+";color:var(--muted);font-size:15px}
+.commit.open>button::after{content:"–"}
+
+/* data model */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.card{border:1px solid var(--hair);border-radius:14px;background:var(--surface);padding:16px 18px;box-shadow:var(--shadow)}
+.card h4{font-family:var(--serif);font-size:16px;font-weight:600;margin-bottom:6px}
+.card .fields{font-size:12.5px;color:var(--muted);line-height:1.7}
+.card .fields code{font-family:var(--sans);font-size:12px;background:var(--paper);border:1px solid var(--hair);border-radius:4px;padding:0 5px}
+.card p.note{font-size:12.5px;color:var(--muted);margin-top:8px;border-top:1px solid var(--hair);padding-top:8px}
+.draftpill{font-size:11px;font-weight:600;color:var(--store);border:1px solid var(--store);border-radius:999px;padding:2px 10px;vertical-align:4px;margin-left:8px;white-space:nowrap}
+.tierhead{margin:28px 0 12px;border-top:1px solid var(--hair);padding-top:20px}
+.tierhead:first-child{margin-top:4px;border-top:none;padding-top:0}
+.tierhead h3{font-size:16.5px;font-weight:700;letter-spacing:-.012em;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tierhead p{font-size:12.5px;color:var(--muted);margin-top:4px;max-width:86ch}
+.tiertag{font-size:11px;font-weight:600;border:1px solid;border-radius:999px;padding:2px 10px}
+.tierhead.t0 .tiertag{color:var(--accent);border-color:var(--accent)}
+.tierhead.t1 .tiertag{color:var(--store);border-color:var(--store)}
+.tierhead.t2 .tiertag{color:var(--muted);border-color:var(--hair-strong)}
+.node.static{cursor:default}
+.node.static:hover{border-color:var(--hair)}
+.subsect{font-size:16.5px;font-weight:700;letter-spacing:-.012em;margin:30px 0 4px}
+.qchip{font-size:11px;font-weight:600;border:1px solid;border-radius:999px;padding:1px 10px;white-space:nowrap}
+.qchip.ready{color:var(--human);border-color:var(--human)}
+.qchip.trade{color:var(--store);border-color:var(--store)}
+.qchip.owed{color:var(--accent);border-color:var(--accent)}
+.qchip.routed{color:var(--muted);border-color:var(--hair-strong)}
+h2.sect{font-family:var(--serif);font-weight:700;font-size:22px;letter-spacing:-.02em;margin:0 0 6px}
+p.sectsub{color:var(--muted);font-size:13.5px;margin-bottom:20px;max-width:80ch}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="mast">
+      <div>
+        <h1>Sentinel <span>Architecture V2.1</span></h1>
+        <div class="sub">Interactive companion to the Architecture Review Packet V2.1. Select any component for its role and rules; walk the review flow step by step.</div>
+      </div>
+      <button class="theme" id="themeBtn" aria-label="Toggle color theme">Dark mode</button>
+    </div>
+    <nav role="tablist" aria-label="Views">
+      <button role="tab" aria-selected="true" data-pane="overview">Overview &amp; commitments</button>
+      <button role="tab" aria-selected="false" data-pane="logical">Logical architecture</button>
+      <button role="tab" aria-selected="false" data-pane="review">Review workflow</button>
+      <button role="tab" aria-selected="false" data-pane="ingest">Ingestion</button>
+      <button role="tab" aria-selected="false" data-pane="data">Data model</button>
+      <button role="tab" aria-selected="false" data-pane="questions">Questions &amp; blockers</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ============ OVERVIEW ============ -->
+<section class="pane on" id="overview">
+  <div class="lede">
+    <h2 class="sect">A governed execution platform for credit review</h2>
+    <p>Sentinel moves the reviewer's starting point from assembling information to adjudicating a prepared, evidence-backed credit assessment: assemble, assess, challenge, adjudicate. The architecture separates deterministic authority from bounded probabilistic reasoning, and makes the audit trail a property of the topology rather than a feature.</p>
+  </div>
+  <p class="north">The LLM may propose facts, interpretations, plans, and challenges. It never determines authority, access, workflow state, evidence identity, or final judgment.</p>
+  <h2 class="sect">The fifteen commitments</h2>
+  <p class="sectsub">The constitutional layer of the platform — the load-bearing rules every design decision answers to.</p>
+  <div class="commits" id="commits"></div>
+</section>
+
+<!-- ============ LOGICAL ============ -->
+<section class="pane" id="logical">
+  <h2 class="sect">Logical architecture — four planes</h2>
+  <p class="sectsub">Control decides, Execution runs, Data persists, Ingestion feeds — with security, audit, evaluation, observability, and lineage cutting across all four. Select a component.</p>
+  <div class="legend">
+    <span><i style="background:var(--ctrl)"></i>Control &amp; enforcement</span>
+    <span><i style="background:var(--llm)"></i>LLM / probabilistic</span>
+    <span><i style="background:var(--det)"></i>Deterministic code</span>
+    <span><i style="background:var(--store)"></i>Governed stores</span>
+    <span><i style="background:var(--human)"></i>Human</span>
+  </div>
+  <div class="duo">
+    <div>
+      <div class="band">
+        <div class="bandtitle"><h4>Experience</h4><small>tenant applications</small></div>
+        <div class="nodes" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+          <button class="node k-human" data-id="exp-crr"><span class="nm"><i></i>CRR review workspace</span><span class="rl">reviewer's application</span></button>
+          <button class="node k-human" data-id="exp-other"><span class="nm"><i></i>Other tenant applications</span><span class="rl">event search · field extraction</span></button>
+        </div>
+      </div>
+      <div class="joint"><svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 0v10M4 8l4 4 4-4"/></svg></div>
+      <div class="band">
+        <div class="bandtitle"><h4>Control plane</h4><small>authority &amp; configuration</small></div>
+        <div class="nodes" style="grid-template-columns:repeat(auto-fit,minmax(185px,1fr))">
+          <button class="node k-ctrl" data-id="ctrl-iam"><span class="nm"><i></i>Identity service</span><span class="rl">firm IAM · entitlements</span></button>
+          <button class="node k-ctrl" data-id="ctrl-pep"><span class="nm"><i></i>Entitlement gateway (PEP)</span><span class="rl">effective-access intersection</span></button>
+          <button class="node k-ctrl" data-id="ctrl-purpose"><span class="nm"><i></i>Purpose &amp; capability policy</span><span class="rl">purpose minted by workflow</span></button>
+          <button class="node k-store" data-id="ctrl-config"><span class="nm"><i></i>Use-case configuration</span><span class="rl">business-owned, versioned</span></button>
+          <button class="node k-ctrl" data-id="ctrl-registry"><span class="nm"><i></i>Agent &amp; model registry</span><span class="rl">manifests · version policy</span></button>
+        </div>
+      </div>
+      <div class="joint pill"><button class="pillbtn" data-id="pill-perop">every governed call re-crosses the PEP — per-operation authorization</button></div>
+      <div class="band">
+        <div class="bandtitle"><h4>Execution plane</h4><small>durable, governed execution</small></div>
+        <div class="nodes" style="grid-template-columns:repeat(auto-fit,minmax(185px,1fr))">
+          <button class="node k-det" data-id="ex-wfr"><span class="nm"><i></i>Workflow runtime</span><span class="rl">owns legal state transitions</span></button>
+          <button class="node k-store" data-id="ex-wfs"><span class="nm"><i></i>Workflow state &amp; checkpoints</span><span class="rl">interrupts · retries · replay</span></button>
+          <button class="node k-det" data-id="ex-rb"><span class="nm"><i></i>Retrieval broker</span><span class="rl">hybrid, authorized retrieval</span></button>
+          <button class="node k-det" data-id="ex-cfw"><span class="nm"><i></i>Context firewall</span><span class="rl">evidence is data</span></button>
+          <button class="node k-llm" data-id="ex-arr"><span class="nm"><i></i>AI reasoning runtime</span><span class="rl">bounded reasoning nodes</span></button>
+          <button class="node k-ctrl" data-id="ex-mg"><span class="nm"><i></i>Model gateway</span><span class="rl">governed deployments</span></button>
+          <button class="node k-det" data-id="ex-vf"><span class="nm"><i></i>Validation framework</span><span class="rl">per-task profiles</span></button>
+        </div>
+      </div>
+      <div class="joint"><svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 0v10M4 8l4 4 4-4"/></svg></div>
+      <div class="band">
+        <div class="bandtitle"><h4>Data plane</h4><small>governed persistent information</small></div>
+        <div class="nodes" style="grid-template-columns:repeat(auto-fit,minmax(185px,1fr))">
+          <button class="node k-store" data-id="d-vega"><span class="nm"><i></i>VEGA index</span><span class="rl">filter-before-search</span></button>
+          <button class="node k-store" data-id="d-hive"><span class="nm"><i></i>Hive store</span><span class="rl">raw + derived, by hash</span></button>
+          <button class="node k-store" data-id="d-snap"><span class="nm"><i></i>Evidence snapshots</span><span class="rl">frozen, superseded, never mutated</span></button>
+          <button class="node k-store" data-id="d-art"><span class="nm"><i></i>Workflow artifacts</span><span class="rl">typed, immutable</span></button>
+          <button class="node k-store" data-id="d-aud"><span class="nm"><i></i>Audit &amp; decision record</span><span class="rl">append-only, two views</span></button>
+        </div>
+        <div class="bandnote">These are store roles, not store decisions: whether existing platform stores are adopted as-is, enhanced, or bridged by an interim solution is a physical choice made with the platform teams. The semantic guarantees — content-addressed identity, immutable history, the lineage chain — are the constant any physical answer must preserve. See the Data model tab for the ownership split.</div>
+      </div>
+      <div class="joint"><svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 14V4M4 6l4-4 4 4"/></svg></div>
+      <div class="band">
+        <div class="bandtitle"><h4>Ingestion plane</h4><small>separate tempo — capture once, derive reproducibly</small></div>
+        <div class="nodes" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+          <button class="node k-det" data-id="in-cap"><span class="nm"><i></i>Capture</span><span class="rl">security envelope at the boundary</span></button>
+          <button class="node k-det" data-id="in-vq"><span class="nm"><i></i>Validate / quarantine</span><span class="rl">invalid never publishes</span></button>
+          <button class="node k-det" data-id="in-deep"><span class="nm"><i></i>DEEP parse</span><span class="rl">versioned derivation</span></button>
+          <button class="node k-llm" data-id="in-enr"><span class="nm"><i></i>Classify &amp; enrich</span><span class="rl">derived metadata only</span></button>
+          <button class="node k-det" data-id="in-pub"><span class="nm"><i></i>Chunk, embed, publish</span><span class="rl">versioned strategies</span></button>
+        </div>
+      </div>
+    </div>
+    <aside class="rail" id="rail-logical"></aside>
+  </div>
+</section>
+
+<!-- ============ REVIEW ============ -->
+<section class="pane" id="review">
+  <h2 class="sect">Review workflow</h2>
+  <p class="sectsub">A composition of workflows, not an autonomous agent: routing, one bounded planner, parallel section workers, prompt chains with gates — terminating in a human ruling of record.</p>
+  <div class="planestrip" id="planestrip" aria-hidden="true">
+    <span data-plane="ctrl">Control plane</span><span data-plane="exec">Execution plane</span><span data-plane="data">Data plane</span><span data-plane="ing">Ingestion plane</span>
+  </div>
+  <div class="stepper">
+    <button class="stepbtn" id="stepPrev">Back</button>
+    <button class="stepbtn" id="stepNext">Walk the flow</button>
+    <span class="where" id="stepWhere">17 steps — or select any node directly</span>
+    <span class="bar"><b id="stepBar"></b></span>
+  </div>
+  <div class="duo">
+    <div class="flowcol">
+      <div class="band">
+        <div class="bandtitle"><h4>Initiate</h4><small>two ways in &mdash; both converge on the same machinery</small></div>
+        <div class="nodes" style="grid-template-columns:1fr auto 1fr;align-items:stretch">
+          <button class="node k-human" data-id="r-fast"><span class="nm"><i></i>Fast start</span><span class="rl">drop documents + optional context &mdash; defaults resolve automatically</span></button>
+          <span class="orsep">or</span>
+          <button class="node k-human" data-id="r-setup"><span class="nm"><i></i>Review setup</span><span class="rl">template &middot; section toggles &middot; custom analysis topics</span></button>
+        </div>
+        <div class="joint" style="padding:5px 0"><svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 0v8M4 6l4 4 4-4"/></svg></div>
+        <div class="seqrow">
+          <button class="node k-det" data-id="r-config"><span class="nm"><i></i>Resolve configuration</span><span class="rl">effective question set &middot; versions pinned</span></button>
+          <span class="seqarr" aria-hidden="true">&#8594;</span>
+          <button class="node k-det" data-id="r-freeze"><span class="nm"><i></i>Freeze evidence snapshot v1</span><span class="rl">the review's universe</span></button>
+        </div>
+        <div class="loopnote" style="margin-top:12px">
+          <button class="node" data-id="r-amend"><span class="nm">&#10227;&ensp;Amend evidence &mdash; open from here onward</span><span class="rl">an updated or missing document at any point: it enters through ingestion, snapshot v2 supersedes v1 (reason + deltas recorded), and only impacted workers re-run</span></button>
+        </div>
+      </div>
+      <div class="joint"><svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 0v10M4 8l4 4 4-4"/></svg></div>
+      <div class="band">
+        <div class="seqrow">
+          <button class="node k-llm" data-id="r-plan"><span class="nm"><i></i>Build evidence plan</span><span class="rl">maps questions to evidence</span></button>
+          <span class="seqarr" aria-hidden="true">&#8594;</span>
+          <button class="node k-det" data-id="r-vplan"><span class="nm"><i></i>Validate plan</span><span class="rl">completeness enforced</span></button>
+        </div>
+      </div>
+      <div class="joint"><svg width="46" height="16" viewBox="0 0 46 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 0v5M23 5H5m18 0h18M5 5v7M23 5v7M41 5v7M2 10l3 4 3-4M20 10l3 4 3-4M38 10l3 4 3-4"/></svg></div>
+      <div class="band">
+        <div class="bandtitle"><h4>Section workers</h4><small>parallel, independent context — one per section or question</small></div>
+        <div class="nodes" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
+          <button class="node k-llm" data-id="r-worker"><span class="nm"><i></i>Worker — section 1</span><span class="rl">independent context</span></button>
+          <button class="node k-llm" data-id="r-worker"><span class="nm"><i></i>Worker — section 2</span><span class="rl">independent context</span></button>
+          <button class="node k-llm" data-id="r-worker"><span class="nm"><i></i>Worker — section n</span><span class="rl">independent context</span></button>
+        </div>
+        <div class="bandnote">Why one worker per section: each worker receives its own context package, so no section inherits another section's framing or errors; a failed section resumes alone without re-running the review; and every section's output is a separately validated, separately auditable artifact.</div>
+      </div>
+      <div class="joint"><svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 0v10M4 8l4 4 4-4"/></svg></div>
+      <div class="band subchain">
+        <div class="bandtitle"><h4>Inside each worker</h4><small>prompt chain with gates</small></div>
+        <div class="seqrow">
+          <button class="node k-det" data-id="c-retrieve"><span class="nm"><i></i>Retrieve</span><span class="rl">broker + context firewall</span></button>
+          <span class="seqarr" aria-hidden="true">&#8594;</span>
+          <button class="node k-llm" data-id="c-assess"><span class="nm"><i></i>Assess</span><span class="rl">dual citations, gaps flagged</span></button>
+          <span class="seqarr" aria-hidden="true">&#8594;</span>
+          <button class="node k-det" data-id="c-validate"><span class="nm"><i></i>Evidence validator</span><span class="rl">deterministic, fails loud</span></button>
+          <span class="seqarr" aria-hidden="true">&#8594;</span>
+          <button class="node k-llm" data-id="c-evaluate"><span class="nm"><i></i>Reasoning evaluator</span><span class="rl">scores, flags — no authority</span></button>
+          <span class="seqarr" aria-hidden="true">&#8594;</span>
+          <button class="node k-det" data-id="c-artifact"><span class="nm"><i></i>Typed artifact</span><span class="rl">persisted, immutable</span></button>
+        </div>
+      </div>
+      <div class="joint"><svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 0v10M4 8l4 4 4-4"/></svg></div>
+      <div class="band">
+        <div class="seqrow">
+          <button class="node k-det" data-id="r-fanin"><span class="nm"><i></i>Fan in</span><span class="rl">failed workers resume alone</span></button>
+          <span class="seqarr" aria-hidden="true">&#8594;</span>
+          <button class="node k-llm" data-id="r-recon"><span class="nm"><i></i>Cross-section reconciliation</span><span class="rl">findings, not consensus</span></button>
+        </div>
+      </div>
+      <div class="joint"><svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 0v10M4 8l4 4 4-4"/></svg></div>
+      <div class="band">
+        <div class="seqrow">
+          <button class="node k-llm" data-id="r-chal"><span class="nm"><i></i>Independent challenge</span><span class="rl">examination mandatory</span></button>
+          <span class="seqarr" aria-hidden="true">&#8594;</span>
+          <button class="node k-det" data-id="r-cval"><span class="nm"><i></i>Challenge validation</span><span class="rl">policy-defined outcomes</span></button>
+          <span class="seqarr" aria-hidden="true">&#8594;</span>
+          <button class="node k-det" data-id="r-packet"><span class="nm"><i></i>Adjudication packet</span><span class="rl">positions · challenge · findings</span></button>
+        </div>
+      </div>
+      <div class="joint"><svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 0v10M4 8l4 4 4-4"/></svg></div>
+      <div class="band" style="border-color:var(--human)">
+        <div class="seqrow">
+          <button class="node k-human" data-id="r-human"><span class="nm"><i></i>Human adjudication</span><span class="rl">durable pause — checkpoint persisted</span></button>
+          <span class="seqarr" aria-hidden="true">&#8594;</span>
+          <button class="node k-det" data-id="r-ruling"><span class="nm"><i></i>Persist ruling</span><span class="rl">outcome of record</span></button>
+          <span class="seqarr" aria-hidden="true">&#8594;</span>
+          <button class="node k-det" data-id="r-final"><span class="nm"><i></i>Finalize decision record</span><span class="rl">complete, reconstructible</span></button>
+        </div>
+        <div class="loopnote">
+          <button class="node" data-id="r-loop"><span class="nm">⟲&ensp;Request more evidence</span><span class="rl">suspend → acquire → snapshot v2 supersedes v1 → re-execute impacted workers only → reconciliation → challenge → adjudication. Snapshot v1 is never mutated.</span></button>
+        </div>
+      </div>
+    </div>
+    <aside class="rail" id="rail-review"></aside>
+  </div>
+</section>
+
+<!-- ============ INGESTION ============ -->
+<section class="pane" id="ingest">
+  <h2 class="sect">Ingestion workflow</h2>
+  <p class="sectsub">The security envelope attaches at capture, before any parser or model touches the bytes. One LLM call in the whole flow. Security quarantine and content trust are separate mechanisms.</p>
+  <div class="duo">
+    <div class="flowcol">
+      <div class="band">
+        <div class="bandtitle"><h4>Capture</h4><small>strictly sequential — the security envelope exists before anything else runs</small></div>
+        <div class="seqrow">
+          <button class="node k-det" data-id="g-cap"><span class="nm"><i></i>1 · Capture + security envelope</span><span class="rl">hash · source · tenant · ACL · provenance</span></button>
+          <span class="seqarr" aria-hidden="true">&#8594;</span>
+          <button class="node k-det" data-id="g-val"><span class="nm"><i></i>2 · Validate</span><span class="rl">pass → continue down the pipeline</span></button>
+        </div>
+        <div class="loopnote" style="margin-top:10px">
+          <button class="node" data-id="g-quar"><span class="nm">&#8627;&ensp;On validation failure: Security quarantine</span><span class="rl">malware, corruption, encryption, unknown tenant, ambiguous ACL — never enters the evidence universe</span></button>
+        </div>
+      </div>
+      <div class="joint"><svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 0v10M4 8l4 4 4-4"/></svg></div>
+      <div class="band">
+        <div class="bandtitle"><h4>Identity &amp; derivation</h4><small>exact identity and version relationship are separate mechanisms</small></div>
+        <div class="seqrow">
+          <button class="node k-det" data-id="g-dedup"><span class="nm"><i></i>3 · Exact dedup</span><span class="rl">content-hash identity — then one of two byte paths</span></button>
+        </div>
+        <div class="nodes" style="grid-template-columns:1fr 1fr;margin-top:8px">
+          <button class="node k-det" data-id="g-link"><span class="nm"><i></i>Known bytes → inspect derivations</span><span class="rl">reuse version-compatible only</span></button>
+          <button class="node k-det" data-id="g-deep"><span class="nm"><i></i>New bytes → DEEP parse</span><span class="rl">extraction + correction sets</span></button>
+        </div>
+        <div class="seqrow" style="margin-top:8px">
+          <button class="node k-det" data-id="g-ver"><span class="nm"><i></i>4 · Version / relationship detection</span><span class="rl">links new bytes to a known logical document — proposes, never asserts identity</span></button>
+        </div>
+      </div>
+      <div class="joint"><svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 0v10M4 8l4 4 4-4"/></svg></div>
+      <div class="band">
+        <div class="bandtitle"><h4>Enrichment &amp; publication</h4><small>derived metadata only — never the security boundary</small></div>
+        <div class="seqrow">
+          <button class="node k-llm" data-id="g-cls"><span class="nm"><i></i>5 · Classify &amp; enrich</span><span class="rl">LLM routing · fails loud on low confidence</span></button>
+          <span class="seqarr" aria-hidden="true">&#8594;</span>
+          <button class="node k-det" data-id="g-chunk"><span class="nm"><i></i>6 · Chunk &amp; embed</span><span class="rl">versioned strategies in lineage</span></button>
+          <span class="seqarr" aria-hidden="true">&#8594;</span>
+          <button class="node k-det" data-id="g-pub"><span class="nm"><i></i>7 · Publish to VEGA + Hive</span><span class="rl">tenant + access tags carried</span></button>
+        </div>
+        <div class="loopnote" style="margin-top:10px">
+          <button class="node" data-id="g-flag"><span class="nm">&#8627;&ensp;Instruction-like content: trust flag, not quarantine</span><span class="rl">stays retrievable evidence with heightened context-firewall treatment — suspicious text alone never suppresses a legitimate document</span></button>
+        </div>
+      </div>
+    </div>
+    <aside class="rail" id="rail-ingest"></aside>
+  </div>
+</section>
+
+<!-- ============ DATA MODEL ============ -->
+<section class="pane" id="data">
+  <h2 class="sect">Data model — working draft<span class="draftpill">illustrative, not definitive</span></h2>
+  <p class="sectsub">A working example of the shapes the guarantees require — enough to pin down what traceability, lineage, provenance, and auditability mean, and deliberately nothing more. It is organized by ownership: the semantic model (what things mean) is CRR's as data owner; the physical model (how things are stored) belongs to the platform teams and is left open here — including whether existing platform stores are adopted as-is, enhanced, or bridged by an interim solution. The middle tier is the contract between the two: CRR states the requirement, the platform chooses the mechanism, and conformance is the acceptance test.</p>
+  <h3 class="subsect">How the model scales — platform core, tenant extensions</h3>
+  <p class="sectsub">Two layers with different change regimes. The core is invariant substrate no tenant configures, because it is what auditability is. Everything above it is declared per application, as configuration.</p>
+  <div class="band">
+    <div class="bandtitle"><h4>Tenant-defined extension layer</h4><small>each application declares its own data elements — through the configuration lane</small></div>
+    <div class="nodes" style="grid-template-columns:repeat(auto-fit,minmax(215px,1fr))">
+      <div class="node static"><span class="nm">CRR credit review — tenant #1</span><span class="rl">evidence refs at table grain · areas of assessment · judgment corpus</span></div>
+      <div class="node static"><span class="nm">Event identification</span><span class="rl">event entities · portfolio links · sampling-based review, no per-item adjudication</span></div>
+      <div class="node static"><span class="nm">Field extraction</span><span class="rl">field schemas · extraction artifacts · volume-scaled validation</span></div>
+    </div>
+    <div class="bandnote">Future applications onboard through automated configuration: inherit the platform-standard shapes, adjust only where the domain demands, deploy through the config lane. Defining data elements is a right the business exercises where it matters — not a schema-authoring chore imposed at onboarding.</div>
+  </div>
+  <div class="joint" style="flex-direction:column;gap:3px"><svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 0v8M4 6l4 4 4-4"/></svg><span style="font-size:11px;color:var(--muted)">extends — never weakens</span></div>
+  <div class="band">
+    <div class="bandtitle"><h4>Platform-standard core</h4><small>invariant — no tenant configures it</small></div>
+    <div class="nodes" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
+      <div class="node static k-det"><span class="nm"><i></i>Content-addressed identity</span><span class="rl">logical ID · version · hash</span></div>
+      <div class="node static k-det"><span class="nm"><i></i>Snapshots + supersession</span><span class="rl">frozen, superseded, never mutated</span></div>
+      <div class="node static k-det"><span class="nm"><i></i>Derivation lineage</span><span class="rl">every artifact traceable end to end</span></div>
+      <div class="node static k-ctrl"><span class="nm"><i></i>Authorization decisions</span><span class="rl">per-call, recorded</span></div>
+      <div class="node static k-store"><span class="nm"><i></i>Append-only audit</span><span class="rl">decision provenance fails closed</span></div>
+    </div>
+    <div class="loopnote" style="margin-top:12px">
+      <div class="node static"><span class="nm">Additive freedom, invariant floor</span><span class="rl">tenant configuration can add entities, fields, and taxonomies; it can never opt out of content hashes, drop lineage links, make artifacts mutable, or shorten audit retention below policy</span></div>
+    </div>
+  </div>
+  <h3 class="subsect">Sentinel's instance — the ownership split</h3>
+  <p class="sectsub">The shapes below are what CRR, as tenant #1, defines on top of the core — the first exercise of the mechanism every application will use. Another tenant would define different extension shapes over the same invariant floor.</p>
+  <div id="cards"></div>
+</section>
+
+<!-- ============ QUESTIONS ============ -->
+<section class="pane" id="questions">
+  <h2 class="sect">Anticipated questions &amp; blockers</h2>
+  <p class="sectsub">The challenges we expect, raised before they are raised. Four statuses: <span class="qchip ready">position ready</span> — the trade-off was weighed and the answer stands; <span class="qchip trade">to negotiate</span> — a genuine trade with room to move; <span class="qchip owed">owed</span> — a real gap, work in progress; <span class="qchip routed">deliberately open</span> — not ours to answer, owner named. A question that lands in already-routed territory is the process working, not a hole in it.</p>
+  <div id="qa"></div>
+</section>
+
+</main>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- node metadata ---------- */
+const KINDS = {ctrl:["Control & enforcement","var(--ctrl)","var(--ctrl-bg)"], llm:["LLM / probabilistic","var(--llm)","var(--llm-bg)"], det:["Deterministic code","var(--det)","var(--det-bg)"], human:["Human","var(--human)","var(--human-bg)"], store:["Governed store","var(--store)","var(--store-bg)"]};
+
+const N = {
+"exp-crr":["CRR review workspace","human","The reviewer's application: initiation, workpaper, right-rail responses, adjudication. Every request into the platform carries the reviewer's identity — agents inherit it; there are no service accounts."],
+"exp-other":["Other tenant applications","human","The shared foundation serves multiple tenants — portfolio event search, high-volume field extraction — each expressed as workflow definitions plus configuration over the same primitives. Tenant segregation is enforced by the gateway, not per application."],
+"ctrl-iam":["Identity service","ctrl","Firm IAM: the source of user entitlements the PEP consumes. Entitlements are resolved live at each capability invocation — never cached into a review."],
+"ctrl-pep":["Entitlement gateway (PEP)","ctrl","The single enforcement point. Effective access = user entitlement ∩ agent capability ∩ purpose ∩ tenant ∩ workflow stage. Agents inherit the human as a ceiling, never as the grant. Every decision is recorded as an AuthorizationDecision."],
+"ctrl-purpose":["Purpose & capability policy","ctrl","Purpose is minted by the workflow from authorized state — review, stage, workflow id — never declared by the caller, closing the hole where a request shops for a permissive purpose. Config authoring is itself a capability in the same intersection."],
+"ctrl-config":["Use-case configuration","store","Business-owned, versioned content: question sets, standards, thresholds, key terms and definitions, context policies, workflow definitions, templates, ChallengePolicy. Entitled authors update it; snapshots pin the versions in force; the evaluation gate covers deployment."],
+"ctrl-registry":["Agent & model registry","ctrl","Agent identity is a full manifest: model snapshot and deployment, prompt hash, tool manifest, context policy, output schema, guardrail and evaluation-profile versions. Any manifest change is a new agent. Model upgrades pass the reference-corpus regression gate before deployment."],
+"pill-perop":["Per-operation authorization","ctrl","The initial request authorization and each downstream capability invocation are distinct authorization events. Fifteen minutes into a review, entitlements may have changed and the stage has — so the retrieval broker resolves effective access against the PEP per operation, against live entitlements and the current stage, never a decision cached at review start."],
+"ex-wfr":["Workflow runtime","det","Owns the predefined execution path and every legal state transition: stage routing, gates, handoffs. LLM output cannot independently advance workflow state. Requirements are vendor-neutral; the engine is a platform selection."],
+"ex-wfs":["Workflow state & checkpoints","store","Where the execution lives: durable state, checkpoints, human-in-the-loop pauses with structured resume outcomes, per-branch failure isolation, idempotent replay. Distinct from audit — audit says what happened; this says where we are and how to safely continue."],
+"ex-rb":["Retrieval broker","det","Hybrid retrieval for credit documents: authorization filter → metadata → lexical → semantic → structural → fusion → reranking → evidence expansion → budgeting. The PEP issues an authorized retrieval scope the index executes as a hard constraint."],
+"ex-cfw":["Context firewall","det","Maintains instruction/data separation. The primary defense is structural: evidence has evidentiary authority but never instruction authority — it cannot alter capability scope, system instructions, tools, or workflow state, regardless of what it says. Injection screening is secondary, defense-in-depth."],
+"ex-arr":["AI reasoning runtime","llm","Hosts bounded reasoning nodes: assessment, planning, challenge, classification, structured extraction. Every call sits between a deterministic input contract (the context package) and deterministic validation. No autonomous loops in the regulated path."],
+"ex-mg":["Model gateway","ctrl","The only route to models — no application or agent connects to a model directly. Deployments are governed configuration: provider, snapshot, parameters, filters, fallback, all versioned and evaluation-gated."],
+"ex-vf":["Validation framework","det","Per-task validation profiles: schema, evidence integrity, reasoning evaluation, policy, task-specific checks. The review workflow instantiates the evidence validator (deterministic, blocks) and reasoning evaluator (probabilistic — scores, flags, escalates, never creates authority). Evaluator outputs are typed artifacts with their own lineage."],
+"d-vega":["VEGA index","store","Metadata and semantic index, tenant-aware. Entitlement filters apply to the index before search runs — anything that enters a context window can surface in generated text, so post-retrieval filtering is already a breach."],
+"d-hive":["Hive store","store","Content-addressed document store: immutable raw bytes plus versioned derived artifacts, fetched by document ID + content hash. A better parser produces a new derivation without touching the source object."],
+"d-snap":["Evidence snapshots","store","Frozen at initiation: documents by logical ID + version + hash, plus every configuration version in force. Immutability means historically reconstructible, not closed — new evidence creates a superseding snapshot version; no snapshot is ever mutated. Permissions stay live: frozen evidence, live authorization."],
+"d-art":["Workflow artifacts","store","Typed, immutable, schema-validated, version-stamped. Agents compose through persisted artifacts, never conversation — every handoff is individually auditable."],
+"d-aud":["Audit & decision record","store","Append-only. Decision provenance — evidence served by hash, content withheld, policy versions, authorization decisions, artifacts, rulings — fails closed: the workflow does not advance without a durable write. Telemetry tolerates loss. Security-audit truth and user-visible provenance are separate views with separate access control."],
+"in-cap":["Capture","det","The security envelope attaches at the boundary, deterministically, before anything else touches the document: content hash, source identity, provenance, tenant, source ACL. Classification later derives additional metadata — it never establishes the security boundary."],
+"in-vq":["Validate / quarantine","det","Invalid or unattributable documents — malware, corruption, encryption, unknown tenant, ambiguous ACL — quarantine and never enter the retrievable evidence universe. Reachable from every pre-publication stage."],
+"in-deep":["DEEP parse","det","Structure-first parse to a versioned derived artifact with page and table coordinates preserved. User corrections (approved extractions, bounding boxes) are versioned correction sets: effective extraction = parse artifact + correction-set version, pinned by review snapshots."],
+"in-enr":["Classify & enrich","llm","The one LLM call in ingestion: document-type classification routing each type to specialized handling, failing loud to human review on low confidence. Produces derived metadata only."],
+"in-pub":["Chunk, embed, publish","det","Versioned chunking and embedding strategies enter the lineage chain — retrieval configuration changes results as materially as model changes and is versioned identically. Published entries carry tenant and access tags so filter-before-search works."],
+/* review */
+"r-fast":["Fast start","human","Drop documents, add optional context, press start. Template and question set resolve automatically from the line of business; all sections applicable. One click from files to running review — the default path, and the MVP in full. Even 'accepted all defaults' is recorded."],
+"r-setup":["Review setup","human","The same landing with the setup panel opened: template selection, section applicability toggles (each disable carries a recorded reason), reviewer-added custom analysis topics, output options. Every control is pre-filled with the defaults the fast path would use — configuring is adjusting defaults, never filling blanks. Custom topics append to the configured set; they never replace it."],
+"r-amend":["Amend evidence — any time after start","store","The reviewer learns of an updated document — a newer borrowing-base certificate after speaking with the credit officer. The amendment channel is open from initiation onward: the new document enters through ingestion like any other, snapshot v2 supersedes v1 with reason and deltas recorded, only the questions that cited the superseded material re-execute, and the changed sections re-earn reconciliation and challenge before returning to the reviewer. Snapshot v1 is never mutated, so what the review looked like before the amendment stays fully reconstructible."],
+"r-config":["Resolve configuration","det","The effective question set is computed deterministically: template question set at its published version, minus disabled sections (reason recorded), plus reviewer-added topics. Every version in force is pinned."],
+"r-freeze":["Freeze evidence snapshot","det","The review's evidence universe is fixed: documents by identity, version, and hash, plus standards, question-set, taxonomy, and retrieval-configuration versions. The system can answer what universe existed for this review, not merely what one retrieval returned."],
+"r-plan":["Build evidence plan","llm","A bounded planner — orchestrator-workers pattern — maps the configured questions against the actual document set: which questions have evidence where, what each worker needs, what is missing. It proposes; the workflow engine executes."],
+"r-vplan":["Validate plan","det","Deterministic completeness check: every mandatory question represented, every referenced document inside the snapshot, every requested operation permitted. The planner structurally cannot invent or suppress questions — the primary defense against injection-steered plans."],
+"r-worker":["Section workers","llm","One worker per workpaper section or question, fanned out in parallel, each with its own context package so no section inherits another's framing. Workers never communicate; they compose through persisted artifacts. A failed worker resumes alone."],
+"c-retrieve":["Retrieve","det","The scoped, entitlement-filtered context package for this section and question only — through the retrieval broker and context firewall, authorized per operation, trust-labeled on the way in."],
+"c-assess":["Assess","llm","The reasoned position with dual citations against question, standards, and evidence. Insufficient evidence is flagged explicitly, never papered over."],
+"c-validate":["Evidence validator","det","Deterministic and blocking: every citation resolves to document, page, span (or table cell), inside the snapshot, under valid authorization. A claim whose references do not resolve is rejected, fail-loud — never passed through."],
+"c-evaluate":["Reasoning evaluator","llm","Probabilistic and advisory: does the evidence actually support the claim, was the right standard applied, was conflicting evidence omitted? It scores, flags, and escalates — it never creates authority. Its output is a typed artifact with its own evaluator manifest."],
+"c-artifact":["Typed artifact","det","Schema-validated, immutable, version-stamped, persisted per section: the unit the next stage consumes. Nothing is carried in conversation between agents."],
+"r-fanin":["Fan in","det","Per-branch failure isolation: worker 17 failing after 1–16 succeed resumes worker 17, never the review. Every node resolves to a defined outcome and is idempotent under replay."],
+"r-recon":["Cross-section reconciliation","llm","Independent workers can produce a globally inconsistent workpaper. Reconciliation emits structured findings — sections, tension, evidence, severity — surfacing contradictions to the human. It never rewrites sections into consensus."],
+"r-chal":["Independent challenge","llm","Adversarial examination is mandatory and its context policy prohibits anchoring content — independence is structural, not prompted. The permitted outcome set (counter-position only, or no-material-challenge with the examination recorded) is methodology configuration per tenant."],
+"r-cval":["Challenge validation","det","The challenge artifact is validated like any other: examination performed, evidence and reasoning recorded, outcome within the ChallengePolicy's permitted set."],
+"r-packet":["Adjudication packet","det","Everything the reviewer rules on, assembled: positions, counter-positions, reconciliation findings, evidence references, and the exact versions of everything that produced them."],
+"r-human":["Human adjudication","human","The pipeline's terminus is a durable pause: checkpoint persisted before the interrupt, structured resume outcomes — approve, modify, reject, request more evidence. The disagreement between position and challenge goes forward to the human; it is never auto-negotiated away."],
+"r-ruling":["Persist ruling","det","The reviewer's ruling and rationale are the outcome of record, stored with question, positions, evidence, and standards version — an auditable judgment corpus that can inform future assessments through controlled configuration, never model training."],
+"r-final":["Finalize decision record","det","The complete decision trail — reconstructible years later from the record alone: what was served, what was withheld, what was argued, what was ruled, under which versions."],
+"r-loop":["Request more evidence","store","The loop that makes frozen snapshots livable: adjudication suspends, evidence is acquired, snapshot v2 supersedes v1 with reason and deltas recorded, only impacted workers re-execute, and the new evidence re-earns its reconciliation and challenge before returning to the reviewer. The same mechanism serves mid-review amendments — an updated document from the credit officer enters the same way."],
+/* ingestion */
+"g-cap":["Capture + security envelope","det","Content hash, source identity, provenance, tenant, and source ACL attach at capture — before any parsing or model contact. Everything after is derivation with lineage."],
+"g-val":["Validate","det","Deterministic checks route the document onward or to quarantine. Quarantine is reachable from every pre-publication stage."],
+"g-quar":["Security quarantine","store","For documents that are invalid or unattributable: malware, corruption, password protection, unknown tenant, ambiguous ACL, missing provenance. Quarantined content never becomes retrievable evidence."],
+"g-dedup":["Exact dedup","det","Content-hash identity: are these exact bytes known? Deterministic, instant — never a model judgment. Identity model: logical_document_id → document_version_id → content_hash."],
+"g-link":["Inspect derivations","det","Known bytes are never re-stored, but derived artifacts are reused only when version-compatible with current parser, chunking, and embedding requirements — otherwise current derivations are generated against the immutable source."],
+"g-deep":["DEEP parse","det","New bytes get a versioned parse artifact with coordinates preserved. Reviewer corrections form versioned, document-scoped, attributed correction sets — human correction entering at the deterministic layer, the safest feedback the platform has."],
+"g-ver":["Version / relationship detection","det","A separate, similarity-based mechanism proposing that this is likely a new version of a known logical document. It links; it never asserts identity — different epistemic status from the hash."],
+"g-cls":["Classify & enrich","llm","Document-type classification — the routing pattern — sending each type to specialized downstream handling. Low confidence fails loud to a human. Output is derived metadata only; it never touches the security boundary."],
+"g-flag":["Content trust flag","store","Instruction-like or injection-patterned text in an otherwise legitimate document never suppresses the evidence — it flags it for heightened context-firewall treatment. Without this split, a counterparty could deny reviewers an unfavorable document by salting it with injection text."],
+"g-chunk":["Chunk & embed","det","Versioned strategies, recorded in the derivation lineage alongside parser and embedding-model versions."],
+"g-pub":["Publish","det","Entries land in VEGA and Hive carrying tenant and access tags, so entitlement filtering happens index-side, before any search runs."]
+};
+
+
+/* ---------- step -> component trace ---------- */
+const SHORT={"ctrl-iam":"Identity","ctrl-pep":"PEP","ctrl-purpose":"Purpose policy","ctrl-config":"Configuration","ctrl-registry":"Registry","pill-perop":"Per-op authorization","ex-wfr":"Workflow runtime","ex-wfs":"State + checkpoints","ex-rb":"Retrieval broker","ex-cfw":"Context firewall","ex-arr":"Reasoning runtime","ex-mg":"Model gateway","ex-vf":"Validation","d-vega":"VEGA","d-hive":"Hive","d-snap":"Snapshots","d-art":"Artifacts","d-aud":"Audit","in-cap":"Capture","in-vq":"Validate/quarantine","in-deep":"DEEP","in-enr":"Classify","in-pub":"Publish"};
+const COMP={
+"r-fast":["ctrl-iam","ctrl-pep","d-aud"],
+"r-setup":["ctrl-iam","ctrl-pep","ctrl-config","d-aud"],
+"r-config":["ex-wfr","ctrl-config","d-aud"],
+"r-freeze":["ex-wfr","ctrl-config","d-hive","d-snap","d-aud"],
+"r-amend":["in-cap","in-vq","in-deep","d-snap","ex-wfr","ex-wfs","d-aud"],
+"r-plan":["ex-wfr","ctrl-pep","ctrl-registry","ex-arr","ex-mg","d-snap","d-art","d-aud"],
+"r-vplan":["ex-wfr","ex-vf","d-snap","d-art","d-aud"],
+"r-worker":["ex-wfr","ex-wfs","ctrl-pep"],
+"c-retrieve":["ctrl-pep","ctrl-iam","ctrl-purpose","ex-rb","ex-cfw","d-vega","d-hive","d-snap","d-aud"],
+"c-assess":["ctrl-registry","ctrl-config","ex-arr","ex-mg","d-aud"],
+"c-validate":["ex-vf","d-hive","d-snap","d-aud"],
+"c-evaluate":["ex-vf","ex-arr","ex-mg","ctrl-registry","d-art","d-aud"],
+"c-artifact":["ex-wfr","ex-wfs","d-art","d-aud"],
+"r-fanin":["ex-wfr","ex-wfs","d-aud"],
+"r-recon":["ex-arr","ex-mg","ex-vf","d-art","d-aud"],
+"r-chal":["ctrl-pep","ctrl-purpose","ctrl-config","ex-rb","ex-cfw","ex-arr","ex-mg","d-aud"],
+"r-cval":["ex-vf","ctrl-config","d-art","d-aud"],
+"r-packet":["ex-wfr","d-art","d-snap","d-aud"],
+"r-human":["ex-wfr","ex-wfs","d-aud"],
+"r-ruling":["ex-wfr","d-art","d-aud"],
+"r-final":["ex-wfr","d-aud"],
+"r-loop":["in-cap","in-vq","in-deep","d-snap","ex-wfr","ex-wfs","d-aud"]
+};
+const REV={}; Object.keys(COMP).forEach(st=>COMP[st].forEach(c=>{(REV[c]=REV[c]||[]).push(st);}));
+function PLANE(c){ if(c.indexOf("ctrl")===0||c==="pill-perop") return "ctrl"; if(c.indexOf("ex-")===0) return "exec"; if(c.indexOf("d-")===0) return "data"; return "ing"; }
+function updateStrip(id){
+  const strip=document.getElementById("planestrip"); if(!strip) return;
+  strip.querySelectorAll("span").forEach(x=>x.classList.remove("on"));
+  if(id && COMP[id]) COMP[id].forEach(c=>{ const cell=strip.querySelector("[data-plane='"+PLANE(c)+"']"); if(cell) cell.classList.add("on"); });
+}
+
+/* ---------- commitments ---------- */
+const COMMITS = [
+["One governed read path","unchanged","Agents and applications never touch the index or store directly; no path bypasses the enforcement point."],
+["Effective access is an intersection","amended","User ∩ agent ∩ purpose ∩ tenant ∩ stage; purpose minted by the workflow; authorization evaluated per governed capability invocation and recorded as AuthorizationDecisions."],
+["Entitlements enforce at the data layer","unchanged","Filters apply at the index before search; post-retrieval filtering is already a breach."],
+["Authority decisions are never probabilistic","amended","No LLM in any authorization, tenant-routing, storage, state-transition, or evidence-identity path."],
+["Deterministic sandwich, two-stage validation","amended","Deterministic evidence validation blocks and fails loud; probabilistic reasoning evaluation scores, flags, escalates — and never creates authority."],
+["Typed artifacts as workflow state","amended","Agents compose through persisted, immutable artifacts that are explicit inputs and outputs of a durable, checkpointed workflow — never conversation."],
+["Audit is structurally unavoidable","amended","Decision provenance fails closed before the workflow advances; telemetry is best-effort; audit truth and user-visible provenance are separate views."],
+["Two chokepoints, opposite directions","unchanged","The inbound pipeline and the request-time gateway are separate components with different failure types, tempos, and owners."],
+["Security envelope at capture; derive reproducibly","amended","Hash, provenance, tenant, and ACL attach before any parsing or model contact; raw bytes are immutable; every derivation is versioned, reproducible, and lineage-linked."],
+["Human terminus, as durable state","amended","The final decision point is a human ruling of record, implemented as a checkpointed pause with structured resume outcomes."],
+["Configuration over training","unchanged","Improvement through authored content, retrieval, evaluation, and governed configuration — never autonomous retraining on production data."],
+["Evidence never has instruction authority","new","All retrieved content is untrusted data with provenance, authority class, and trust class; the defense is structural, not detection-dependent."],
+["The workflow owns legal state transitions","new","Durable state, checkpoints, defined failure outcomes, idempotent replay; LLM output cannot independently advance a regulated workflow."],
+["Frozen evidence, live authorization","new","Snapshots fix the evidence universe and supersede rather than mutate; permissions are evaluated at access time; revocation strands trigger a defined resolution state."],
+["Every behavioral change is evaluation-gated","new","Models, prompts, parsers, chunking, embeddings, retrieval, taxonomies, policies, schemas, and guardrails change only through the reference-corpus regression gate; any manifest change is a new agent."]
+];
+
+/* ---------- data model cards ---------- */
+const CARDS = [
+["EvidenceRef","<code>document_id</code> <code>version_id</code> <code>content_hash</code> <code>page</code> <code>coordinates</code> <code>text_span?</code> <code>table_id?</code> <code>row</code>/<code>column</code> <code>header_path?</code> <code>unit</code> <code>reporting_period</code> <code>verbatim_value</code>","Table-aware: a covenant ratio traces to the cell, not the page. Roadmap: polymorphic refs incl. derived evidence (source refs + versioned transformation)."],
+["ReviewEvidenceSnapshot","<code>snapshot_id</code> <code>snapshot_version</code> <code>supersedes_snapshot_id?</code> <code>change_reason?</code> <code>added/removed_documents[]</code> <code>documents[]</code> + <code>standards</code>/<code>question_set</code>/<code>taxonomy</code>/<code>retrieval_config</code> versions","Superseded, never mutated. Immutable means reconstructible, not closed to new evidence."],
+["WorkflowState","<code>review_execution_id</code> <code>authorization_context</code> (subject · tenant · workflow · stage · agent) <code>snapshot_id</code> <code>planner artifact</code> <code>worker task states</code> <code>interrupt state</code> <code>execution status</code>","authorization_context holds the inputs to live entitlement resolution — never a cached decision. Distinct store from audit."],
+["AuthorizationDecision","<code>decision_id</code> <code>timestamp</code> <code>subject</code> <code>agent</code> <code>purpose</code> <code>stage</code> <code>policy_version</code> <code>entitlement_version</code> <code>result</code>","Audit-side, one per governed capability invocation. Historical decisions live here — never in workflow state."],
+["AgentManifest","<code>model</code> (provider · family · snapshot · deployment) <code>prompt hash</code> <code>tool manifest</code> <code>context policy</code> <code>output schema</code> <code>guardrails</code> <code>evaluation profile</code> — all versioned","Any manifest change is a new agent. Skill and configuration versions are pinned; promotion never mutates a running agent."],
+["ChallengeArtifact + ChallengePolicy","<code>original position</code> <code>strongest counter-position</code> <code>counter-evidence[]</code> <code>unresolved assumptions[]</code> <code>materiality</code> <code>outcome</code> · policy: <code>examination_required: true</code> <code>permitted_outcomes[]</code>","Examination is architecture; the permitted outcome set is methodology configuration per tenant."],
+["CrossSectionFinding","<code>sections[]</code> <code>issue type</code> <code>conflicting statements</code> <code>evidence refs</code> <code>severity</code> <code>resolution status</code>","Surfaces contradictions to the human; never rewrites sections into consensus."],
+["EvaluatorArtifact","<code>evaluator manifest</code> <code>input_artifact_hash</code> <code>evaluation profile</code> <code>timestamp</code> <code>scores</code> <code>flags</code> <code>rationale</code>","Evaluator outputs get the same lineage as what they evaluate — an unattributed flag is unusable evidence about the system's own behavior."],
+["Learnings store → promotion pipeline","<code>reviewer artifacts</code> (respond · adjust · clear · rulings) → <code>candidates</code> → reviewed, versioned <code>promotion</code> → config lane → <code>reversion</code> available","Probabilistic candidates, deterministic deployment. Promotion is the only path from memory to behavior."],
+["Derivation lineage","<code>raw hash</code> → <code>parser vN</code> → <code>parse artifact</code> → <code>correction-set vN</code> → <code>chunking vN</code> → <code>embedding vN</code> → <code>index vN</code> → <code>retrieval config vN</code>","Retrieval changes alter results as materially as model changes and are versioned identically."]
+];
+
+/* ---------- render commitments ---------- */
+const commitsEl = document.getElementById("commits");
+COMMITS.forEach((c,i)=>{
+  const d=document.createElement("div"); d.className="commit";
+  d.innerHTML='<button aria-expanded="false"><span class="num">'+(i+1)+'</span><span class="ttl">'+c[0]+'</span></button><div class="body">'+c[2]+'</div>';
+  d.querySelector("button").addEventListener("click",()=>{ d.classList.toggle("open"); d.querySelector("button").setAttribute("aria-expanded", d.classList.contains("open")); });
+  commitsEl.appendChild(d);
+});
+
+/* ---------- render data cards ---------- */
+
+/* ---------- anticipated questions ---------- */
+const QA=[
+["Scale, sizing, and cost","The one place the architecture is deliberately silent so far — and the first place engineers look.",[
+["owed","What are the volumes — reviews per year, documents per review, corpus size at year three, peak concurrent reviews, latency targets?","Not yet specified, and honestly so: a sizing and non-functional-requirements sheet is in progress and is owed before physical design starts. The architecture is shaped for scale — process-once ingestion, per-section parallelism, reuse of derivations — but shape is not a substitute for numbers."],
+["trade","Append-only audit plus immutable snapshots plus versioned derivations means storage that only grows. What does that cost?","Growth is bounded by design: exact dedup means a document is stored once however many reviews cite it; snapshots hold references, not copies; derivations are regenerated only on version change. Retention classes follow records policy rather than operational TTLs — that part is non-negotiable. The cost model ships with the sizing sheet."]
+]],
+["Pressure on the commitments","Where the design's own rules invite challenge — each was weighed deliberately, and the trade-off is on record.",[
+["trade","Per-operation PEP authorization is a latency tax and a single point of failure. Can decisions be cached?","Partially negotiable: short-TTL caching of decision results is a reasonable engineering conversation. What is not cacheable is across a stage transition or an entitlement change — either invalidates immediately. Policy evaluation is milliseconds against model calls measured in seconds, so the latency budget is dominated elsewhere; the PEP itself scales horizontally."],
+["ready","Fail-closed audit makes the audit store load-bearing. What is its availability story?","Deliberate. Decision provenance is durably written or transactionally buffered before the workflow advances, so the audit store carries the same availability class as workflow state. A paused review is an acceptable outcome; an unrecorded one is not — that ordering is the regulatory posture, stated up front."],
+["routed","Can the index actually apply entitlement predicates at that granularity, at scale, before search runs?","Exactly the fitness-for-purpose question in the current adopt-vs-enhance assessment of the platform stores. The requirement — filter before any candidate set forms — is fixed; the mechanism, including enhancement or an interim bridge, is the platform's call."],
+["ready","Doesn't the platform already provide a gateway? Why does Sentinel need its own PEP?","Whether a firm-level gateway sits on Sentinel's route — the platform material describes an agentgateway in the pro-code request path — is itself a confirmation item for the platform conversation. The position holds either way: a firm gateway governs reach (which tools and models this tenant may touch at all); Sentinel's PEP governs scope (what this reviewer's agent, on this review, at this stage, may see — snapshots, per-stage context policies, withholding records). If both exist they nest, and neither substitutes for the other; if no firm gateway applies, the PEP is simply the only enforcement point rather than the inner one."],
+["ready","One worker per section multiplies model calls. Why pay that?","Because the isolation is a control, not an implementation detail: no section inherits another's framing, a failed section resumes alone, and every section's artifact is separately validated and auditable. Cost scales with section count, not document count, and model routing lets lighter tasks run on lighter models."]
+]],
+["Operations and environments","The questions architecture documents classically under-answer — named here so they arrive with owners, not surprises.",[
+["routed","Who operates the workflow runtime and carries the pager?","Paired with the execution-engine selection, which is the platform conversation's first ask. The target operating model is business-led configuration on a platform-operated runtime — configuration authorship and operational accountability deliberately separated."],
+["owed","Disaster recovery: if the platform fails mid-review, how quickly must it come back (recovery time objective), and how much in-flight work may be lost (recovery point objective)?","The requirement is stated — durable checkpoints mean recovery is resume, never restart: no completed worker re-runs, no side effect duplicates, and nothing already written to decision provenance is ever lost. The concrete time targets are owed with the sizing and NFR sheet."],
+["ready","When a shared model endpoint upgrades, who runs the regression gate?","The gate is ours — reference corpus, thresholds, promotion decision — and the infrastructure is the platform's: evaluation runs and results live in the platform's evaluation storage per tenant obligations. An endpoint change never silently changes a running workflow, because agents pin deployments through their manifests."]
+]],
+["Deliberately open — routed to owners","Unanswered by design. Each has a named owner and blocks only what it must.",[
+["routed","Are the platform document and index stores fit for purpose as-is?","Adopt, enhance, or bridge with an interim solution — assessment underway with the platform teams. The semantic guarantees are the constant any answer must preserve."],
+["routed","Does the approved pipeline support a configuration-deployment lane distinct from code releases?","Platform ask. Either answer works — configuration ships as governed content through the pipeline, or as governed data through Sentinel's own store — but the answer shapes the business-led operating model."],
+["routed","Does the agent harness provide durable workflow execution, or does Sentinel's workflow runtime sit above it?","The lead technical question for the platform team, with the full execution-semantics checklist attached. Sentinel has a working answer either way; the layering just needs confirming."],
+["routed","Is the AI challenge agent allowed to agree — may it conclude no material issue after examining a position, or must it always produce a counter-position?","The examination is mandatory either way: the challenge agent must adversarially stress-test every drafted position and record what it tested. Whether its permitted outcomes include a recorded no-material-challenge conclusion, or must always state a counter-position, is a CRR methodology decision with effective-challenge expectations in view — kept as per-tenant ChallengePolicy configuration so the architecture supports either answer."],
+["routed","How fast must an upstream entitlement revocation reach the index filters?","Semantics are settled — frozen evidence, live authorization, defined resolution state for stranded reviews. The propagation SLO and mechanism are a joint security and platform decision."]
+]]
+];
+const qaEl=document.getElementById("qa");
+const QLBL={ready:"position ready",trade:"to negotiate",owed:"owed",routed:"deliberately open"};
+QA.forEach((g,gi)=>{
+  const head=document.createElement("div"); head.className="tierhead"+(gi===0?" t0":"");
+  head.innerHTML="<h3>"+g[0]+"</h3><p>"+g[1]+"</p>";
+  qaEl.appendChild(head);
+  const list=document.createElement("div"); list.className="commits";
+  g[2].forEach(q=>{
+    const d=document.createElement("div"); d.className="commit";
+    d.innerHTML='<button aria-expanded="false"><span class="ttl">'+q[1]+'</span><span class="qchip '+q[0]+'">'+QLBL[q[0]]+'</span></button><div class="body">'+q[2]+'</div>';
+    d.querySelector("button").addEventListener("click",()=>{ d.classList.toggle("open"); d.querySelector("button").setAttribute("aria-expanded", d.classList.contains("open")); });
+    list.appendChild(d);
+  });
+  qaEl.appendChild(list);
+});
+
+const PHYS=["Physical model — deliberately open","Engines &middot; schemas &middot; indexes &middot; partitioning &middot; replication &middot; encryption &middot; backup &middot; retention mechanics — and whether the platform's existing stores are adopted as-is, enhanced to meet the semantic guarantees, or bridged by an interim solution while that settles.","Owned by the platform and infrastructure teams. The semantic model above is storage-agnostic by design: any physical choice that preserves content-addressed identity, immutable history, and the full lineage chain conforms — and nothing that quietly replaces evidence hashes with storage row IDs, normalizes away verbatim spans, or expires audit records on an operational TTL does."];
+const GROUPS=[
+["CRR-owned — the semantic model",
+ "What things mean. Business content in data form: evidence semantics, review structure, and the judgment corpus — CRR's methodology and regulatory work product, serialized. Authored and versioned by CRR under the existing configuration lifecycle.",
+ [CARDS[0],CARDS[1],CARDS[5],CARDS[6],CARDS[8]]],
+["Negotiated contract — requirement and mechanism",
+ "CRR specifies what must be true — what is traceable, what is recorded, what a version means; the platform decides how it is achieved. These shapes are the working statement of the requirement, not a schema.",
+ [CARDS[3],CARDS[4],CARDS[7],CARDS[9],CARDS[2]]],
+["IT-owned — the physical model",
+ "How things are stored and run. Out of scope for this draft on purpose.",
+ [PHYS]]
+];
+const cardsEl=document.getElementById("cards");
+const TIERTAGS=["CRR authors","jointly agreed","platform decides"];
+GROUPS.forEach((g,gi)=>{
+  const head=document.createElement("div"); head.className="tierhead t"+gi;
+  head.innerHTML="<h3>"+g[0]+"<span class='tiertag'>"+TIERTAGS[gi]+"</span></h3><p>"+g[1]+"</p>";
+  cardsEl.appendChild(head);
+  const grid=document.createElement("div"); grid.className="cards";
+  g[2].forEach(c=>{
+    const d=document.createElement("div"); d.className="card";
+    d.innerHTML="<h4>"+c[0]+"</h4><div class='fields'>"+c[1]+"</div><p class='note'>"+c[2]+"</p>";
+    grid.appendChild(d);
+  });
+  cardsEl.appendChild(grid);
+});
+
+/* ---------- rails ---------- */
+const railDefault = {
+  "rail-logical":["Four planes","","Select any component. Control decides authority, Execution runs durable governed work, Data persists evidence and decisions, Ingestion feeds the stores on its own tempo. The dashed pill between Control and Execution is the rule that makes the whole thing airtight."],
+  "rail-review":["The review flow","","Select a node, or use the walk-through above. Purple nodes are the only places a model speaks; every one of them is fenced by deterministic contracts on both sides, and the flow ends with a person."],
+  "rail-ingest":["Ingestion","","Select a node. The design discipline: one LLM call in the whole flow, and the security boundary exists before anything probabilistic runs."]
+};
+function setRail(railId, nodeId){
+  const rail=document.getElementById(railId);
+  if(!nodeId){ const d=railDefault[railId]; rail.innerHTML="<h3>"+d[0]+"</h3><p>"+d[2]+"</p><p class='hint'>Details come from Architecture Review Packet V2.1.</p>"; return; }
+  const n=N[nodeId]; const k=KINDS[n[1]];
+  let h='<span class="kind" style="color:'+k[1]+';background:'+k[2]+'">'+k[0]+'</span><h3>'+n[0]+'</h3><p>'+n[2]+'</p>';
+  if(railId==="rail-review" && COMP[nodeId]){
+    h+='<div class="chips"><span class="chiplbl">Runs through — select to open in the logical architecture</span>'+COMP[nodeId].map(c=>'<button class="chip p-'+PLANE(c)+'" data-jump="'+c+'">'+SHORT[c]+'</button>').join('')+'</div>';
+  }
+  if(railId==="rail-logical" && REV[nodeId] && REV[nodeId].length){
+    const steps=REV[nodeId]; const shown=steps.slice(0,7);
+    h+='<div class="chips"><span class="chiplbl">Appears in the review workflow at</span>'+shown.map(st=>'<button class="chip p-step" data-jump="'+st+'">'+N[st][0]+'</button>').join('')+(steps.length>7?'<span class="chipmore">+'+(steps.length-7)+' more steps</span>':'')+'</div>';
+  }
+  rail.innerHTML=h+'<p class="hint">Details come from Architecture Review Packet V2.1.</p>';
+}
+Object.keys(railDefault).forEach(id=>setRail(id,null));
+
+/* ---------- selection ---------- */
+function paneRail(pane){ return pane==="logical"?"rail-logical":pane==="review"?"rail-review":"rail-ingest"; }
+document.querySelectorAll(".pane").forEach(pane=>{
+  pane.addEventListener("click",e=>{
+    const btn=e.target.closest("[data-id]"); if(!btn) return;
+    pane.querySelectorAll(".sel").forEach(x=>x.classList.remove("sel"));
+    pane.querySelectorAll("[data-id='"+btn.dataset.id+"']").forEach(x=>x.classList.add("sel"));
+    if(railDefault[paneRail(pane.id)]) setRail(paneRail(pane.id), btn.dataset.id);
+    if(pane.id==="review") updateStrip(btn.dataset.id);
+  });
+});
+
+/* ---------- tabs ---------- */
+const tabs=document.querySelectorAll("nav [role=tab]");
+function goTab(name){
+  tabs.forEach(x=>x.setAttribute("aria-selected", x.dataset.pane===name?"true":"false"));
+  document.querySelectorAll(".pane").forEach(p=>p.classList.toggle("on", p.id===name));
+}
+tabs.forEach(t=>t.addEventListener("click",()=>goTab(t.dataset.pane)));
+function selectIn(paneId,id){
+  const pane=document.getElementById(paneId);
+  pane.querySelectorAll(".sel").forEach(x=>x.classList.remove("sel"));
+  const els=pane.querySelectorAll("[data-id='"+id+"']");
+  els.forEach(x=>x.classList.add("sel"));
+  if(els[0]) els[0].scrollIntoView({block:"center"});
+}
+document.addEventListener("click",e=>{
+  const chip=e.target.closest(".chip[data-jump]"); if(!chip) return;
+  const id=chip.dataset.jump;
+  if(COMP[id]){ goTab("review"); selectIn("review",id); setRail("rail-review",id); updateStrip(id); }
+  else { goTab("logical"); selectIn("logical",id); setRail("rail-logical",id); }
+});
+
+/* ---------- review stepper ---------- */
+const STEPS=["r-fast","r-config","r-freeze","r-plan","r-vplan","r-worker","c-retrieve","c-assess","c-validate","c-evaluate","c-artifact","r-fanin","r-recon","r-chal","r-packet","r-human","r-final"];
+let step=-1;
+const reviewPane=document.getElementById("review");
+function showStep(){
+  reviewPane.querySelectorAll(".lit").forEach(x=>x.classList.remove("lit"));
+  const where=document.getElementById("stepWhere"), bar=document.getElementById("stepBar");
+  const prev=document.getElementById("stepPrev"), next=document.getElementById("stepNext");
+  prev.disabled = step<=0;
+  if(step<0){ where.textContent="17 steps — or select any node directly"; bar.style.width="0"; next.textContent="Walk the flow"; setRail("rail-review",null); updateStrip(null); return; }
+  const id=STEPS[step];
+  reviewPane.querySelectorAll("[data-id='"+id+"']").forEach(x=>x.classList.add("lit"));
+  setRail("rail-review", id);
+  updateStrip(id);
+  where.textContent="Step "+(step+1)+" of "+STEPS.length+" — "+N[id][0];
+  bar.style.width=((step+1)/STEPS.length*100)+"%";
+  next.textContent = step>=STEPS.length-1 ? "Start over" : "Next";
+  const el=reviewPane.querySelector(".lit"); if(el) el.scrollIntoView({block:"nearest"});
+}
+document.getElementById("stepNext").addEventListener("click",()=>{ step = step>=STEPS.length-1 ? -1 : step+1; showStep(); });
+document.getElementById("stepPrev").addEventListener("click",()=>{ if(step>0){step--; showStep();} else {step=-1; showStep();} });
+showStep();
+
+/* ---------- theme ---------- */
+const root=document.documentElement, tbtn=document.getElementById("themeBtn");
+let saved=null; try{ saved=localStorage.getItem("sentinel-theme"); }catch(e){}
+if(saved==="dark"||saved==="light") root.setAttribute("data-theme",saved);
+function label(){
+  const t=root.getAttribute("data-theme");
+  const dark = t==="dark" || (!t && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  tbtn.textContent = dark ? "Light mode" : "Dark mode";
+}
+tbtn.addEventListener("click",()=>{
+  const t=root.getAttribute("data-theme");
+  const dark = t==="dark" || (!t && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const nxt = dark ? "light" : "dark";
+  root.setAttribute("data-theme",nxt);
+  try{ localStorage.setItem("sentinel-theme",nxt); }catch(e){}
+  label();
+});
+label();
+})();
+</script>
+</body>
+</html>
