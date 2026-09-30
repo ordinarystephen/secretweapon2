@@ -1,0 +1,19 @@
+Good question. It's a combination, but the Excel isn't the end product.
+
+What I'm building is a test set for DEEP. For each source document (starting with QCRs), there's a human-verified "gold" file that says what a correct extraction of that document contains. You run DEEP on the same PDFs, and we score its output against the gold.
+
+How a gold file gets made:
+
+1. Machine first pass. The tool runs Azure Document Intelligence (prebuilt-layout) on the PDF and turns the output into a workbook. Every heading, paragraph, bullet, table cell, figure and page header/footer becomes a row, in reading order, with a proposed parent section. A Fields tab is pre-filled from a shared codebook of the business data points we care about: ratings, exposure, facility terms, financials, etc.
+
+2. Human review. I go through every row against the PDF and mark it CONFIRMED, MODIFIED, ADDED or EXCLUDED. That means fixing heading levels, merged or split sections, table headers, OCR misreads and rows that fell out of image tables, and filling in each field with its value and where on the page it comes from.
+
+3. Compile. The tool validates the workbook, reattaches page coordinates from the original DI output (geometry never passes through Excel), and writes one JSON per document, plus a report and a highlighted PDF for a visual check. The final compile refuses to run if any row is still unreviewed.
+
+So the content starts as machine output, but everything in the gold has been checked by a person. The review state on each item shows exactly where I changed the machine's reading.
+
+The gold has two layers: the document structure (sections, text and tables, in reading order) and the specific fields Sentinel uses. What matters most on our side is whether DEEP finds the sections and puts the right content under them, gets the text complete and gets the tables right. Block-level detail is secondary.
+
+The gold format is deliberately independent of DEEP's output format, so scoring needs a small adapter from your output to it.
+
+The first document, a 17-page QCR, is done. Happy to send you the gold JSON, the highlighted PDF and the codebook so you can see the shape.
