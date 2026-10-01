@@ -1,0 +1,20 @@
+Update: the Albertsons annotation.xlsx was damaged by my upload routine.
+I uploaded through the browser and renamed the file before the upload
+had finished writing. I've re-uploaded from my local copy, checked it's a
+valid zip, and recompiled. No workaround is needed on your side.
+
+Please:
+1. Report your diagnosis of the gold NUL case: what the file sizes
+   showed, and whether you could reproduce it.
+2. Confirm what landed: atomic writes for all outputs; compile's on-disk
+   re-read and sha256 check; gold verify for .gold.json and .xlsx; the
+   workbook check with a plain error message; the doctor round trip;
+   export into export_dir/<doc_id>/ with the codebook.
+3. Finish the close-out: run the Albertsons final compile with --export,
+   run gold verify on both copies, and report the results.
+4. Confirm you changed nothing in any work folder apart from compile
+   outputs.
+5. Add a plain "Quick start" section to the README: config check, init,
+   review, draft compile, final with --export. Include the safe upload
+   routine: upload under a temporary name, run gold verify on it, then
+   mv it over annotation.xlsx.
