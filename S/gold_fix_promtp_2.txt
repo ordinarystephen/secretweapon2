@@ -1,0 +1,55 @@
+# Fix: gold.json written with trailing NUL bytes
+
+## Problem
+The final gold for albertsons-march-26-vf in its work folder
+(out/albertsons-march-26-vf.gold.json) is valid JSON followed by a run of
+NUL bytes, so json.load fails with "Extra data". --final passed because
+compile validates the gold in memory, not the file on disk.
+
+## Evidence
+- A copy of the corrupted file is at /mnt/private/gold/nul-case.gold.json.
+- The --export copy written by the same run
+  (/mnt/private/gold/out/albertsons-march-26-vf.gold.json) is clean, and
+  so is every file in out/superseded/.
+- The work-folder gold was open in an editor while compile ran; no other
+  copy was.
+
+## 1. Diagnose before fixing
+- Compare the corrupted file's size with the byte length of its JSON
+  content and with the sizes of the superseded files. A size that matches
+  an older file points to an overwrite without truncation.
+- Trace exactly how compile writes the gold, moves the previous one to
+  superseded/, and writes the export copy. Look for in-place writes,
+  missing truncation, preallocation, or the export being written from
+  memory rather than copied from disk.
+- Reproduce on a scratch work folder: compile with the gold closed, then
+  with it open in an editor, and check the final bytes each time.
+- Report what you found before changing code. If the editor turns out to
+  be the cause, the fixes below still go in.
+
+## 2. Fix
+- Write every output (gold, report, highlight, export copies) atomically:
+  temp file in the same directory, flush, os.fsync, os.replace.
+- As compile's last step, re-read each written file from disk. For the
+  gold: json.load, schema-validate, and compare its sha256 with the bytes
+  that were meant to be written. Fail loudly on any mismatch.
+- Add `gold verify <path>`: checks one gold file on disk (parses, passes
+  the schema, no stray bytes) and prints its size and sha256.
+- Add a write/read round trip with fsync on work_root and export_dir to
+  `gold doctor`.
+
+## 3. Same code path, small additions
+- `--export` writes into export_dir/<doc_id>/ instead of export_dir, so a
+  second document can't overwrite the first one's report or highlight.
+- `--export` also copies in the codebook the gold was compiled against.
+
+## 4. Tests and close-out
+- Tests: overwriting a longer existing file leaves no stale bytes; the
+  on-disk check catches a corrupted file; gold verify passes a good file
+  and fails a NUL-padded one; export lands in export_dir/<doc_id>/ with
+  the codebook. All existing tests pass.
+- Synthetic fixtures only. Never copy real document text into tests,
+  fixtures, commits or logs; diagnostics are metadata only.
+- Re-run the final compile for albertsons-march-26-vf with --export,
+  run gold verify on both copies, and report the results.
+- Add a decisions.md entry.
