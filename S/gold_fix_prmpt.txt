@@ -1,0 +1,37 @@
+# Fix: kv pairs dropped from form tables (translate.py)
+
+## Problem
+On a second QCR, page 1's Static Data form came through only as a table.
+di/raw.json contains the page-1 keyValuePairs, so DI returned them, and
+translate.py's kv-over-table skip rule dropped them. The rule treats a
+table as a form only when kv pairs cover >=90% of its cells, and this
+form fell below that.
+
+## Principle
+The costs are lopsided. A dropped pair means the reviewer retypes it with
+no coordinates; a kept duplicate costs one bulk EXCLUDED. When the rule
+is unsure, keep the pairs.
+
+## Do
+1. Diagnose first. For every page-1 table in both work folders
+   (albertsons-march-26-vf and <new-doc-id>), print: rows x cols,
+   non-empty cells, kv pairs whose key or value falls inside the table,
+   coverage as the current rule computes it, and the decision.
+   Metadata only, no cell text.
+2. Change the rule so both Static Data forms classify as forms, while
+   Albertsons' data tables (exposure, facility, cap table) still drop
+   their header-row pairs. Candidates: coverage over non-empty cells
+   rather than all cells; a label/value column pattern; key and value
+   in adjacent cells of the same row. Pick the simplest rule that
+   separates both documents with margin, biased toward keeping.
+3. Keep emitting the form's table (the reviewer excludes it), with
+   "form table: kv pairs kept" in its notes.
+4. Tests on synthetic fixtures only: a form table at ~70% coverage keeps
+   its pairs; a data table whose header row comes back as pairs still
+   drops them; all existing tests pass. Never copy real document text
+   into tests, fixtures, commits or logs.
+5. Re-run init on both real documents into scratch folders
+   (--di-json <work>/di/raw.json --doc-id <id>-kvcheck) and report kv
+   rows kept and dropped per table, counts only. Delete the scratch
+   folders afterwards.
+6. Add a decisions.md entry.
