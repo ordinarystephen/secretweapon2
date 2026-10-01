@@ -1,0 +1,23 @@
+1. run this:
+
+cd ~/sentinel-gold   # or wherever you normally run gold from
+python - <<'EOF'
+import zipfile, glob
+paths = glob.glob("/mnt/private/gold/work/albertsons-march-26-vf/*.xlsx") + glob.glob("codebooks/*.xlsx")
+for p in sorted(paths):
+    b = open(p, "rb").read()
+    nuls = len(b) - len(b.rstrip(b"\x00"))
+    print(f"{p}: {len(b):,} bytes | zip ok: {zipfile.is_zipfile(p)} | starts {b[:4]!r} | trailing NULs: {nuls:,}")
+EOF
+
+2. If annotation.xlsx shows zip ok: False with trailing NULs, recover it into a copy first, and leave the original alone:
+
+cp /mnt/private/gold/work/albertsons-march-26-vf/annotation.xlsx /mnt/private/gold/albertsons-annotation-backup.xlsx
+python - <<'EOF'
+import zipfile
+src = "/mnt/private/gold/albertsons-annotation-backup.xlsx"
+dst = "/mnt/private/gold/albertsons-annotation-recovered.xlsx"
+open(dst, "wb").write(open(src, "rb").read().rstrip(b"\x00"))
+print("zip ok:", zipfile.is_zipfile(dst))
+EOF
+
