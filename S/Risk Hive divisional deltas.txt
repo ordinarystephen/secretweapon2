@@ -1,0 +1,72 @@
+Subject: Risk Hive divisional deltas – CRR business context and recommendations
+
+Hi [Name],
+
+Thanks for pulling the divisional deltas together. As requested, below is the business context behind where CRR lands. The attached note has the full business context, my ruling and the detailed explanation for each item, plus a disposition table covering every delta we have a view on.
+
+GUIDING PRINCIPLE
+
+Several of the deltas read as though Hive were a collaboration tool or an AI platform. Our view is that Hive is the storage layer for published, finalised documents: close to, but not quite, cold storage. Drafting and collaboration stay in OneDrive and SharePoint, and AI capabilities sit outside Hive, with DEEP as the extraction and embedding engine. Most of what we decline below follows from that.
+
+ITEMS WE SUPPORT
+
+1. Access control (ODR-01, 09, 36, 48, 49, 52)
+Business context: credit files routinely include material only certain people should see, such as undisclosed deals before close, board-member financials and HR-related documents. Legal entity and jurisdiction also drive access.
+Ruling: support the intent, delivered through a two-tier model rather than per-document exceptions:
+- Standard collections for the bulk of credit documentation.
+- Restricted collections with their own entitlements for sensitive material.
+Conditions:
+- Restricted collections are never discoverable, and an unauthorised request gets "not found" rather than "access denied".
+- Access tightening takes effect in DEEP as well as in Hive.
+- A document keeps its ID if it later moves from restricted to visible, e.g. when a deal closes.
+
+2. Deletion and legal hold (ODR-25, 26, 31, 32)
+Business context: Wealth Management must permanently delete client documents on offboarding, and Legal needs holds that override that.
+Ruling: adopt into the baseline using a tombstone model:
+- The content is removed, but a minimal non-identifying record remains, so IDs are never reused and downstream systems see "deleted" rather than a broken link.
+- Deletion covers everything derived from the document (extracted text, OCR, embeddings, indexes), with DEEP and consuming applications confirming the purge.
+- Legal hold always wins.
+- Removing a prevent-delete flag requires four-eyes approval.
+
+3. Duplicates (ODR-17)
+Business context: process once. The same document uploaded twice shouldn't become two records, both for efficiency and because an offboarding deletion has to find every copy.
+Ruling: adopt with conditions. Prevent duplicates at upload, not just report them afterwards:
+- A content-hash check catches exact copies.
+- File name is a quick signal only, since many different documents share names like "Financials.pdf".
+- Content similarity flags near-duplicates.
+Where residency requires a separate copy (e.g. Switzerland), the copies are linked as one document.
+
+4. Events, AI traceability and APIs (ODR-16, 53, 06, 07, 42)
+Business context: our reviews must be reproducible for audit and regulators, so we need to show exactly which document version supported a finding.
+Ruling: adopt.
+- Lifecycle events let applications react to new versions, deletions and quarantine.
+- OpenAPI and API management are standard hygiene.
+- Multilingual search and OCR are delivered in DEEP.
+
+ITEMS WE DECLINE
+
+5. Collaboration features (ODR-37, 38, 39, 40: check-in/check-out, custom workflows, folders, co-authoring)
+Business context: these are work-in-progress features, and the institution already supports them in OneDrive and SharePoint. Anyone consuming Hive needs to trust that what they find is the record, not a working copy. Editing in place also conflicts with immutable versions, which citation and deletion depend on.
+Ruling: decline entirely. Work in progress does not land in Hive. By the same logic:
+- SharePoint and network-share synchronisation (FR-7) should pick up only finalised documents.
+- Personal staging (FR-5) should be a short-lived holding area before publication, not a place to edit.
+
+6. AI features (ODR-20, 45, 46, 47: knowledge graph, summarisation, entity resolution, relationship graph)
+Business context: DEEP is the extraction and embedding engine, and the institutional direction is to build AI capabilities outside the platforms they consume. Building these into Hive would:
+- duplicate DEEP;
+- create a second AI layer with its own model-risk ownership and validation burden;
+- blur accountability when an output is wrong.
+Ruling: decline. Hive can store AI outputs produced elsewhere, with their provenance, but should not generate them.
+
+RELATED POINTS FROM THE CORE REQUIREMENTS
+
+The note also covers four points from the candidate requirements that underpin the above:
+- User identity carried through API and MCP calls, so agents only see what the user can.
+- Immutable versions with mandatory hashes.
+- A quarantine state that blocks use of a document until its issue is resolved.
+- Logging of read access for audit.
+
+Happy to walk through any of it.
+
+Best,
+Steve
