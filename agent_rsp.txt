@@ -1,0 +1,12 @@
+Owner disposition: YES — authorized Step 0 recovery. Edit
+sentinel_platform/config/settings.py so KNOWN_SETTING_NAMES and
+REQUIRED_SETTING_NAMES carry the canonical names the rest of the
+module already uses (MODEL_SERVICE_ENDPOINT, MODEL_CHAT_DEPLOYMENT,
+MODEL_API_VERSION, MODEL_EMBEDDINGS_DEPLOYMENT, DOCINTEL_ENDPOINT,
+DOC_STORE_DIR, plus the optional names Settings.load() reads). No
+other edits, no test edits. Proof of restoration: tests/test_settings*
+green — they pin the contract, so green = restored. Commit it with a
+neutral message ("align settings name constants with the module's
+readers"). Then re-run the settings sanity command and report
+`file:` and `missing:`. Then PAUSE — do not proceed to Step 1; the
+owner has a demo and will redirect.
