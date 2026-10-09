@@ -194,6 +194,39 @@ golden ONCE, deliberately; the commit names the expected diff
 else moving: stop and flag). Finish with make check-all; report every
 count; expect everything green. STOP.
 ```
+## BLOCK 4b — the leak is ordering, not paths: diagnose, pin, regenerate
+
+```
+BLOCK 4b — the leak is ordering, not paths: diagnose, pin, regenerate
+
+Correct premise: no path string leaks; instead segment selection
+differs across machines (chunk 19 here vs 10 stored, contextChars
+3837 vs 3829). Prime suspect: a filesystem-order-dependent iteration
+(glob/listdir/iterdir/Path.glob without sorted()) somewhere on the
+golden build path — APFS and blobfuse2 return entries in different
+orders.
+
+1) DIAGNOSE first: dump the stored selection's span (chunk 10) and
+   this machine's (chunk 19) side by side — are they the same text at
+   shifted boundaries, reordered content, or genuinely different
+   spans? Then trace the build path and list EVERY filesystem-order-
+   dependent iteration feeding document loading, chunk assembly, or
+   candidate ordering. Report findings before fixing.
+2) FIX at the source: every such iteration gains a deterministic
+   order by LOGICAL key (sorted filename / document id / stable chunk
+   index), never by whatever the OS returns. Smallest diff; no
+   scoring or selection logic changes.
+3) Red-first hermetic test: build the golden flow with the directory
+   listing monkeypatched to return entries in REVERSED (or shuffled-
+   with-fixed-seed) order and assert the built result is byte-
+   identical to a normal build — selection included. Red before the
+   fix, green after. Commit fix+test alone.
+4) THEN regenerate the golden ONCE if the fixed build still differs
+   from the stored record. The commit names the expected diff:
+   the segment_methodology_selection fields and context accounting
+   ONLY — anything else moving: stop and flag.
+5) make check-all; report every count; expect fully green. STOP.
+```
 
 ## BLOCK 5 — working-tree tidy (small, deliberate)
 
