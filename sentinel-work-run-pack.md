@@ -285,16 +285,29 @@ places, not an unauthorized diff. Commit 81b572e stands.
 ## BLOCK 5 — working-tree tidy (small, deliberate)
 
 ```
-1) Show the full diff of the uncommitted Makefile and .gitignore
-   changes. The Makefile change should be the ui-build VITE_ROUTER=hash
-   (+VITE_API=http) pin — if so, commit it alone ("pin the platform UI
-   build's mode and routing"); if it contains anything else, report
-   and stop. Commit or discard the .gitignore lines per what they are
-   (report them).
-2) git rm docs/rounds/round-01-brief.md (tracked notes file that does
-   not belong in the tree), commit ("remove stray notes file").
-3) git status must end clean. make check-all; report the full counts.
-   STOP.
+BLOCK 5 — tree hygiene and clean close
+
+The golden flow is fixed and check-all is fully green. This block
+only cleans the worktree. No source, test, or golden changes.
+
+1) git status. Enumerate every uncommitted change and untracked file.
+2) The Makefile change (VITE_ROUTER=hash pin on ui-build) is a real
+   environment requirement: commit it ALONE with a message saying the
+   workspace detection returns false here so the router must be
+   pinned at build time.
+3) The .gitignore change: report the exact added lines. If they
+   ignore settings.env and local junk only, commit ALONE as
+   "ignore local environment files". If anything else is in there,
+   stop and list it.
+4) git rm docs/rounds/round-01-brief.md and commit alone ("remove
+   ported round brief; governance lives outside the repo"). After
+   this, docs/ should not exist in the repo — confirm.
+5) Any remaining untracked files: list them with one line each on
+   what they appear to be. Do NOT delete or commit them — report only.
+6) Final: git status must show a clean tree (untracked-only items
+   from step 5 excepted, pending my disposition). git log --oneline
+   -10 so I can see the port's commit history. make check-all once
+   more; report every count. STOP.
 ```
 
 ---
