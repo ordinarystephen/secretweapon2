@@ -100,25 +100,32 @@ STOP after the report. No fixes, no commits.
 ## BLOCK 3 — vendor-alias fallback
 
 ```
-VENDOR-ALIAS FALLBACK — settings read AICE-injected names automatically
+VENDOR-ALIAS FALLBACK v2 — settings read AICE-injected names; declare werkzeug
 
-In sentinel_platform/config/settings.py: read() gains a DECLARED alias
-map consulted (file first, then process env — same order as now) when
-the canonical name resolves empty:
-  MODEL_SERVICE_ENDPOINT      <- AZURE_OPENAI_ENDPOINT
-  MODEL_CHAT_DEPLOYMENT       <- AZURE_OPENAI_DEPLOYMENT
-  MODEL_API_VERSION           <- OPENAI_API_VERSION
-  MODEL_EMBEDDINGS_DEPLOYMENT <- AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT
-  DOCINTEL_ENDPOINT           <- AZURE_DOCINTEL_ENDPOINT
-Canonical always wins when both resolve. apply_to_process_env writes
-canonical names only (behavior below settings unchanged). Settings
-records which names resolved via alias; surface that list in the
-health envelope beside the existing settings reporting.
-Tests red-first: alias from process env; alias from file; canonical
-beats alias; no alias outside the map. KNOWN/REQUIRED tuples
-unchanged. One line in HANDBOOK.md's settings rows documenting the
-aliases. make check green except the known golden test. Commit
-("accept vendor-prefixed environment names as aliases"), report, STOP.
+1) In sentinel_platform/config/settings.py: read() gains a DECLARED
+   alias map consulted (file first, then process env — same order as
+   now) when the canonical name resolves empty:
+     MODEL_SERVICE_ENDPOINT      <- AZURE_OPENAI_ENDPOINT
+     MODEL_CHAT_DEPLOYMENT       <- AZURE_OPENAI_DEPLOYMENT
+     MODEL_API_VERSION           <- OPENAI_API_VERSION
+     MODEL_EMBEDDINGS_DEPLOYMENT <- AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT
+     DOCINTEL_ENDPOINT           <- AZURE_DOCINTEL_ENDPOINT
+   Canonical always wins when both resolve. apply_to_process_env
+   writes canonical names only. NEVER read AZURE_OPENAI_API_KEY or any
+   credential name — the alias map is exactly these five, closed.
+   Settings records which names resolved via alias; surface that list
+   in the health envelope beside the existing settings reporting.
+   Tests red-first: alias from process env; alias from file; canonical
+   beats alias; no alias outside the map. KNOWN/REQUIRED tuples
+   unchanged. One HANDBOOK.md settings-rows line documenting the
+   aliases AND noting the two deployment names are not AICE-injected
+   and must be supplied (settings file or project env). Commit alone
+   ("accept vendor-prefixed environment names as aliases").
+2) Declare werkzeug as a direct dependency (it is imported directly in
+   errors.py and spa.py but only transitively locked): uv add
+   werkzeug==<the version already in our uv.lock>. Commit alone
+   ("declare directly imported dependencies").
+3) make check green except the known golden test. Report, STOP.
 ```
 
 ## BLOCK 4 — golden environment leak
@@ -141,6 +148,21 @@ golden ONCE, deliberately; the commit names the expected diff
 (accounting fields and formerly path-bearing fields only — anything
 else moving: stop and flag). Finish with make check-all; report every
 count; expect everything green. STOP.
+```
+
+## BLOCK 5 — working-tree tidy (small, deliberate)
+
+```
+1) Show the full diff of the uncommitted Makefile and .gitignore
+   changes. The Makefile change should be the ui-build VITE_ROUTER=hash
+   (+VITE_API=http) pin — if so, commit it alone ("pin the platform UI
+   build's mode and routing"); if it contains anything else, report
+   and stop. Commit or discard the .gitignore lines per what they are
+   (report them).
+2) git rm docs/rounds/round-01-brief.md (tracked notes file that does
+   not belong in the tree), commit ("remove stray notes file").
+3) git status must end clean. make check-all; report the full counts.
+   STOP.
 ```
 
 ---
