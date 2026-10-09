@@ -128,6 +128,28 @@ VENDOR-ALIAS FALLBACK v2 — settings read AICE-injected names; declare werkzeug
 3) make check green except the known golden test. Report, STOP.
 ```
 
+## BLOCK 3b — align the embeddings constructor with the installed package's types
+
+```
+make check fails at mypy: llm.py:185 passes azure_deployment= and
+api_version= to AzureOpenAIEmbeddings; the installed langchain-openai
+declares different canonical parameter names (the current kwargs work
+at runtime only as pydantic aliases).
+
+1) Inspect the INSTALLED package's AzureOpenAIEmbeddings signature
+   (and the chat model's at the same time, if constructed nearby) —
+   read the actual class, not memory.
+2) Change the constructor kwargs at llm.py:185 (and any sibling
+   construction with the same pattern) to the canonical declared
+   parameter names, passing the SAME values — behavior identical,
+   types satisfied. No type: ignore, no config loosening, no other
+   llm.py changes.
+3) make check must now be green except the known golden test, with
+   mypy fully clean. Report the before/after kwargs and the counts.
+   Commit alone ("align model client constructor with the installed
+   SDK's parameter names"). STOP.
+```
+
 ## BLOCK 4 — golden environment leak
 
 ```
