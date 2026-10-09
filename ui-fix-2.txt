@@ -1,0 +1,29 @@
+DEMO-EVE TASK v2 — adopt sentinel-crr's proxy serving PATTERN (scoped)
+
+FIRST, 5 minutes of diagnosis before any code: (a) confirm what path
+`make serve` actually serves the UI from (trace the Makefile target and
+api/app.py's static config) and whether tonight's rebuilt ui/dist is the
+directory being served — a stale or differently-located bundle explains
+"still broken after rebuild"; (b) load the page once and record the
+exact current console/network failures (are they still root-anchored
+/assets/ 404+MIME errors, or new ones?). Put both in the report.
+
+THEN: read how sentinel-crr serves its SPA behind the Domino workspace
+proxy (its Flask static serving, index handling, any base-href or
+request-root handling, any proxy/forwarded-header use). Identify the
+MECHANISM that makes it prefix-agnostic. MIGRATE THE PATTERN into THIS
+repo's serving path (api/app.py and, only if the pattern requires it,
+the built index.html handling). Rules:
+- Pattern, never the file: no imports from sentinel-crr, no copying its
+  config/auth/routes, no new dependencies, no switching to its server.
+- The UI seam, the mock, createApi, and the API routes are untouched.
+  Keep the relative-asset build and the import.meta.url API base from
+  the previous task; the serving pattern composes with them.
+- Smallest diff that makes the page render styled behind the dynamic
+  prefix. Show git diff --stat and the key hunks in the report.
+- Verify: npm run verify green; make check green except the known
+  golden test; curl /api/health locally returns JSON; the served
+  index.html's asset references resolve under a prefixed URL.
+- Commit, neutral message. If sentinel-crr's sources are not readable
+  from this workspace, STOP and say so instead of guessing the pattern.
+Then STOP and report.
