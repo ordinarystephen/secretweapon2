@@ -262,7 +262,25 @@ changing relevance behavior.
    accounting only — anything else moving: stop and flag.
 4) make check-all; report every count; expect fully green. STOP.
 ```
+## BLOCK 4c — continuation: reorderings ratified, regenerate golden
 
+```
+BLOCK 4c — continuation: reorderings ratified, regenerate golden
+
+The four span reorderings (capitalization, credit_watchlist_status,
+external_ratings_check, validation_tests_actually_run) are RATIFIED.
+Context-character counts unchanged confirms the same spans are
+selected; only their order changed, from float-residue order to the
+stable logical key. That is the same defect corrected in four more
+places, not an unauthorized diff. Commit 81b572e stands.
+
+1) Regenerate the golden ONCE. The commit message names the full
+   expected diff: segment_methodology_selection fields, span ORDER
+   within the four named units above (membership and context
+   accounting unchanged), and nothing else. Any other field moving:
+   stop and flag before committing.
+2) make check-all. Report every count; expect fully green. STOP.
+```
 
 ## BLOCK 5 — working-tree tidy (small, deliberate)
 
