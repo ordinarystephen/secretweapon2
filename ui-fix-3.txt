@@ -1,0 +1,21 @@
+FOLLOW-UP — force hash routing for the platform build (scoped, final fix)
+
+vite.config.ts:22-25 already supports hash routing with a router
+override. Set that override explicitly for the PLATFORM build so hash
+routing no longer depends on workspace detection: either pass the
+existing override variable in the build command alongside VITE_API=http,
+or (better, one-line) make hash the default for http builds in
+vite.config.ts with detection only able to confirm it, never disable it.
+Smallest diff; name the mechanism you used.
+
+Do not change router.tsx's logic, the seam, the mock, or any test
+except one that pins the router selection — show its diff if touched.
+
+Rebuild (VITE_API=http + the override). Verify and report: (a) the
+built bundle selects the hash router (no basename derivation on the
+http path); (b) npm run verify green; (c) serve locally and fetch the
+index — then STOP and report; the owner tests in the real browser.
+
+Also report, one paragraph, for the backlog: WHY workspace detection
+returns false in this environment (what it checks vs. what this URL
+looks like) — diagnosis only, no fix.
