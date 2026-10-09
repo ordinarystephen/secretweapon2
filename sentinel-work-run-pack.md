@@ -325,6 +325,26 @@ vestigial harness ignore rules".
    under docs/ with one line each on what it appears to be. Do not
    remove anything yet. STOP and report the list.
 ```
+## BLOCK 5 — continuation 2: docs/ disposition and close
+
+```
+BLOCK 5 — continuation 2: docs/ disposition and close
+
+All six tracked files under docs/ are governance or reference
+material whose authority lives outside this repository. Disposition:
+REMOVE ALL.
+
+1) git rm -r docs/ and commit alone: "externalize governance and
+   reference material; the repo carries HANDBOOK.md as its only
+   orientation document". Confirm docs/ no longer exists in the
+   repo or the worktree.
+2) git status — must show a completely clean tree. If anything
+   remains, list it and stop.
+3) git log --oneline -15 so the port's full commit history is
+   visible in one view.
+4) make check-all once more; report every count; expect fully
+   green. STOP.
+```
 ---
 
 ## After Block 3 (owner, by hand)
