@@ -1,0 +1,29 @@
+DEMO-EVE TASK — prefix-agnostic serving (authorized, scoped, do only this)
+
+Goal: the platform bundle must work unmodified behind ANY dynamic proxy
+prefix (Domino workspace proxy). No baked prefix, no env var per session.
+
+1. ui/vite.config.ts: set base: './' for the build (relative assets).
+2. ui/src/api/http/httpApi.ts (or where the base is computed): the API
+   base URL is computed ONCE at module initialization as an ABSOLUTE URL:
+     const appRoot = new URL('..', import.meta.url)        // .../<prefix>/
+     const apiBase = import.meta.env.VITE_API_BASE_URL
+                     || new URL('api', appRoot).toString()
+   Store it; every request uses this absolute base so later client-side
+   route changes cannot shift it. VITE_API_BASE_URL override keeps working.
+   createApi stays synchronous; the seam contract, the mock, and every
+   test are untouched except any test that pins the old base computation —
+   update ONLY such a test to pin the new computation, and show its diff.
+3. Rebuild: cd ui && VITE_API=http npm run build
+4. Verify and report each: (a) npm run verify green; (b) curl the serve's
+   /api/health locally — JSON; (c) the built index.html references
+   ./assets/... (relative); (d) no file outside ui/vite.config.ts, the
+   http client, and at most one pinning test was touched — show git diff
+   --stat.
+5. Commit, neutral message: "serve the UI relative to its own URL so any
+   proxy prefix works". Then STOP.
+
+Known accepted limitation tonight (report it, do not fix it): refreshing
+the browser on a DEEP route under a prefix may not restore correctly;
+entering at the app root works. Durable server-side base injection is
+backlog, not tonight.
