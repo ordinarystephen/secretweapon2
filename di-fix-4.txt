@@ -1,0 +1,13 @@
+FINAL PRE-DEMO ATTEMPT — one package, one retry, hard stop rules
+
+1) Find azure-identity's version in crr-sentinel/uv.lock; uv add
+   azure-identity==<that version>.
+2) Restart serve, retry ONE parse, report the outcome verbatim.
+3) If it PARSED: commit pyproject.toml + uv.lock (including the
+   earlier azure-ai-documentintelligence addition), neutral message
+   "add the document-layout SDK dependencies", report, STOP.
+4) If the next failure is ANOTHER ModuleNotFoundError: report the
+   module name and STOP — no further installs.
+5) If the next failure is credential/auth/token/connection-related
+   (DefaultAzureCredential resolution, 401, SSL, anything non-import):
+   report it verbatim and STOP — that class is not fixable pre-demo.
