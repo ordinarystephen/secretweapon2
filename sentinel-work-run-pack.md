@@ -310,6 +310,21 @@ only cleans the worktree. No source, test, or golden changes.
    more; report every count. STOP.
 ```
 
+## BLOCK 5 — continuation: gitignore ratified, docs/ enumeration
+
+```
+BLOCK 5 — continuation: gitignore ratified, docs/ enumeration
+
+The .gitignore change is RATIFIED. The two removed lines
+(claude/worktrees/ and its comment) are vestiges of a development
+harness that does not exist on this machine; removing them is
+correct hygiene. Commit the .gitignore change ALONE as "remove
+vestigial harness ignore rules".
+
+1) After that commit: git ls-files docs/ — list EVERY tracked file
+   under docs/ with one line each on what it appears to be. Do not
+   remove anything yet. STOP and report the list.
+```
 ---
 
 ## After Block 3 (owner, by hand)
