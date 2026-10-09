@@ -1,0 +1,15 @@
+10-MINUTE TIMEBOX — install the DI SDK, one retry, report
+
+The DI failure is ModuleNotFoundError: no 'azure' module. Fix:
+1) Find which Azure DI package + version crr-sentinel uses (its
+   requirements/pyproject/lock — likely azure-ai-documentintelligence
+   or azure-ai-formrecognizer; note the exact name and version).
+2) Install the SAME package in THIS platform: uv add <name>==<version>
+   (brings azure-core). If the index refuses it, report the error and
+   STOP.
+3) Restart the serve, retry ONE parse of the earlier document through
+   the UI path or a direct call, and report the outcome verbatim —
+   success, or the next exception in full.
+4) If it parsed: commit pyproject.toml + uv.lock only, neutral message
+   "add the document-layout SDK dependency". If it didn't: commit
+   nothing, report, STOP.
