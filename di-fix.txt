@@ -1,0 +1,14 @@
+URGENT, 20-MINUTE TIMEBOX — stand up the DI proxy or report impossible
+
+AZURE_DOCINTEL_ENDPOINT=https://127.0.0.1:8443 is the platform's local
+DI proxy (doc_intelligence.py:14). Nothing listens on 8443, so parses
+fail. Find how the sibling project at ~/projects/sentinel-crr (or
+wherever the old sentinel-crr checkout lives — locate it) STARTS that
+proxy: grep its Makefile, scripts, server code, and configs for 8443 /
+docintel / proxy. If found: start it the same way IN THIS WORKSPACE,
+then prove it with:
+  curl -sk -m 5 https://127.0.0.1:8443/  (any HTTP response = alive)
+and report how it was started (command + working dir) so the owner can
+restart it later. Change NO files in sentinel-platform. If the launch
+mechanism cannot be found or started within 20 minutes, STOP and say
+exactly what you found and where it dead-ends.
