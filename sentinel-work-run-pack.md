@@ -150,6 +150,29 @@ at runtime only as pydantic aliases).
    SDK's parameter names"). STOP.
 ```
 
+## BLOCK 3c — authorized updates to the two tests pinning the old world
+
+```
+BLOCK 3c — authorized updates to the two tests pinning the old world
+The two new failures are tests pinning pre-3b conditions. Authorized,
+narrowly:
+1) test_make_embeddings_constructs: update its kwarg assertions to the
+   new canonical names (deployment, openai_api_version), same values —
+   the test keeps pinning that the configured values reach the
+   constructor, under the names the installed SDK declares.
+2) test_missing_sdk_is_a_loud_import_error: it previously relied on the
+   SDK actually being absent; now it must SIMULATE absence hermetically
+   (block the module in sys.modules via monkeypatch so the import path
+   raises) and keep asserting the loud, helpful ImportError. The
+   production fail-loud behavior itself is unchanged.
+No other test changes. Run both red-first-in-reverse: show each failing
+BEFORE your edit (already captured) and passing after, with the suite
+count. make check must now be green except the known golden test, mypy
+clean. ONE commit: the llm.py constructor change plus these two test
+updates ("align model client constructor with the installed SDK's
+parameter names"). Report the counts. STOP.
+```
+
 ## BLOCK 4 — golden environment leak
 
 ```
