@@ -1,0 +1,27 @@
+20-MINUTE TIMEBOX — review-run OSError: diagnose, fix only mechanical causes
+
+A review run failed with OSError ("reviewing the workpaper"). The serve
+is RUNNING — do not kill it; capture, then act.
+
+1) Read the serve log/output for the full traceback of the failed run.
+   Report it verbatim: exception class/message, the module raising it,
+   and whether it is (a) a network/connection error to the MODEL
+   endpoint, (b) a missing Python module, (c) file-system/store, or
+   (d) memory (errno ENOMEM / exit-137-adjacent).
+2) By class:
+   (a) MODEL endpoint/connection: compare our settings.env MODEL_* values
+       against the old checkout at ~/projects/crr-sentinel (.env /
+       .env.example / its Domino config) — endpoint URL, deployment
+       names, api version. These are endpoints/ids, not secrets. If ours
+       are wrong or the placeholder deployment "gpt-6-sol" is the issue,
+       EDIT settings.env (git-ignored, environment config — permitted)
+       to the old project's working values, restart serve, go to 3.
+   (b) Missing module: uv add <name>==<version from crr-sentinel's
+       uv.lock>, commit pyproject.toml+uv.lock only ("add the model
+       client dependency"), restart serve, go to 3.
+   (c)/(d): report verbatim and STOP — no fix.
+3) Retry ONCE end to end through the server's own API (create review,
+   upload the SAME PDF from the earlier attempt if accessible, else the
+   synthetic one, start the run, poll to completion). Report the final
+   state verbatim: RUN_SUCCESS or the next exception in full. Then STOP.
+   Leave the serve running either way. Touch no platform code.
