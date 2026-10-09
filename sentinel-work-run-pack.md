@@ -227,6 +227,42 @@ orders.
    ONLY — anything else moving: stop and flag.
 5) make check-all; report every count; expect fully green. STOP.
 ```
+## BLOCK 4c — deterministic ranking: quantize + stable tie-break (authorized)
+
+```
+BLOCK 4c — deterministic ranking: quantize + stable tie-break (authorized)
+
+The cause is confirmed: a float64 tie broken by machine-dependent
+float32 noise. The previous "no scoring/selection changes" constraint
+is LIFTED for exactly this: make ranking deterministic without
+changing relevance behavior.
+
+1) In the retrieval ranking that feeds span selection:
+   a) compute/compare ranking scores in float64;
+   b) QUANTIZE scores for ordering (round to a named constant, e.g.
+      SCORE_RANK_PRECISION = 6 decimal places — far below meaningful
+      relevance differences, far above cross-machine float noise),
+      with a comment stating why;
+   c) break ties by a STABLE LOGICAL key — document order within the
+      review, then chunk index — never by float residue, never by
+      anything environment-dependent.
+   Scope: ordering only. Score computation inputs, candidate set,
+   context-cap logic, and selection output shapes unchanged.
+2) Red-first hermetic test: two candidates whose injected scores
+   differ only by sub-quantization noise (x and x+1e-8), presented in
+   both orders; assert the SAME winner both times and that the winner
+   is the stable-key choice. Red before the fix on this machine,
+   green after. Commit fix+test alone ("make retrieval ranking
+   deterministic across numerical environments").
+3) Run the golden reproduction test. If the fixed build now matches
+   the STORED golden byte-identically (plausible: the stable key may
+   pick chunk 10, the Mac's winner), report that and DO NOT
+   regenerate. Otherwise regenerate ONCE; the commit names the
+   expected diff: segment_methodology_selection fields and context
+   accounting only — anything else moving: stop and flag.
+4) make check-all; report every count; expect fully green. STOP.
+```
+
 
 ## BLOCK 5 — working-tree tidy (small, deliberate)
 
