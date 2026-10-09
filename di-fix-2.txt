@@ -1,0 +1,15 @@
+10-MINUTE TIMEBOX — identify the exact DI failure, then maybe one fix
+
+The DI proxy on 127.0.0.1:8443 is alive (nginx, Domino-provided). Our
+parse still failed. 1) Find the EXACT exception from the failed parse:
+read the serve process log/output for the layout client's traceback
+(or trigger one retry and capture it). Report the exception class,
+message, and the URL path our client called. 2) Compare with
+crr-sentinel's doc_intelligence client: does it disable TLS
+verification for the local proxy, and what URL path does it call?
+3) IF AND ONLY IF the failure is TLS verification or a URL-path
+mismatch against the local proxy: apply the old client's exact
+behavior for the local-proxy case as the smallest possible change in
+our layout client (migrate the pattern), red-first test if feasible in
+the time, rebuild nothing in the UI, retry one parse, report the
+result. Any OTHER failure class: report it and STOP — no fix.
