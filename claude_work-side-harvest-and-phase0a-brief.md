@@ -1,14 +1,18 @@
 # Work-side brief — Step 0.4 harvest + Phase 0 part A (read-only)
 
-**Repo:** `/home/aice/projects/sentinel-platform` (UBS Domino). **Nothing in this brief changes the repo, the stores, or the persistent config root.** No commits. No reruns. No model calls. If a step would require writing anywhere except the scratch folder named below, stop and report instead.
-**Scratch folder:** `~/sentinel-scratch/2026-10-12/` — create it; every output lands there. Nothing from it is committed. Steve carries the reports out by hand.
+**Repo:** `/home/aice/projects/sentinel-platform` (UBS Domino). **Nothing in this brief changes the repo, the stores, or the persistent config root.** No commits. No reruns. No model calls. If a step would require writing anywhere except the output folder named below, stop and report instead.
+**Output folder:** `docs/reports/2026-10-12/` inside the repo — `docs/` is gitignored, so nothing under it is tracked. Create the folder; every output lands there. Nothing is committed. Steve carries the reports out by hand.
 **Secrets:** environment *names* and *shapes* only. Never write a value of any `*_KEY`, `*_SECRET`, token, connection string, or endpoint URL into any output. Deployment names and mount paths are fine.
 
 ---
 
 ## Gate (stop on failure)
 
-1. `git status` clean on `main`; `git log -1` is c72b24f or a descendant. Report the hash.
+1. On `main`; `git log -1` is c72b24f or a descendant. Report the hash. The working tree is expected to carry exactly three things beyond a clean state, and none of them fails the gate:
+   - a modified `.gitignore` adding `docs/` — Steve's, ignore it;
+   - an untracked simplified-template directory under `apps/crr/templates/` — Steve's, report its path and leave it alone;
+   - modified `sentinel_platform/execution/llm.py` and `tests/test_llm.py` — origin unknown. **Do not stash, revert, commit or edit them.** Write `git diff -- sentinel_platform/execution/llm.py tests/test_llm.py` in full into `00a-llm-diff.patch` in the output folder, and summarise in the report what the diff changes (constructor parameters, model names, auth, anything else) and whether `make check-all` passes with it in place. Steve decides what it is.
+   Anything else modified or untracked beyond those three is a gate failure: list it and stop.
 2. `make check-all` green. Report counts.
 3. The persistent mount is present and the 7-Eleven review exists in the store (list reviews via the API or the store index; name the review id). If more than one 7-Eleven review exists, use the most recent completed one and say so.
 4. The persistent config root holds the simplified template. Report its path and template id.
@@ -24,11 +28,11 @@ Write `01-environment-harvest.md` with these sections, each from the live enviro
 5. **Dependencies.** How the UI build reaches packages (the mirror and its config file), how Python packages resolve, and anything that had to be pinned individually.
 6. **Model.** The deployment names in use for chat and embeddings, the API version name, and how authentication works (describe, no values). The Document Intelligence endpoint's presence (yes/no, no URL).
 7. **Known gaps.** Anything from the Round 01 close-out still open (the blobfuse `os.replace` atomicity question; anything else you can see).
-8. **Session reports.** Locate the Round 01 session reports and briefs on this machine (scratch dirs, home, anywhere). Copy them into `reports/` under the scratch folder. List what was found and what could not be found.
+8. **Session reports.** Locate the Round 01 session reports and briefs on this machine (scratch dirs, home, anywhere). Copy them into `session-reports/` under the output folder. List what was found and what could not be found.
 
 ## Part 2 — sibling template snapshot
 
-Copy the simplified template directory from the persistent config root into `02-template-snapshot/`, preserving structure. Write `02-template-manifest.txt` with each file's relative path and sha256. Also record: the template id, the criteria-set id and version, the profile id and version, the question count, and which questions carry `fills`, `rating_input: true`, `applies_when`, `gate`, `na_allowed: false`, or `absence` in `answer_shape` (ids only). Do not edit anything.
+There are now two work-side copies of the simplified template: the one in the persistent config root and the untracked one in the repo tree. Copy both into `02-template-snapshot/persistent-root/` and `02-template-snapshot/repo-tree/`, preserving structure. Write `02-template-manifest.txt` with each file's relative path and sha256 for both copies, and a final line stating whether the two copies are identical and, if not, which files differ. (The gate item 3 review check should also say which copy the 7-Eleven run was executed against, if the run record shows it.) Also record: the template id, the criteria-set id and version, the profile id and version, the question count, and which questions carry `fills`, `rating_input: true`, `applies_when`, `gate`, `na_allowed: false`, or `absence` in `answer_shape` (ids only). Do not edit anything.
 
 ## Part 3 — Phase 0 part A: classify the attention items (separable; skip if Steve says to hold Phase 0)
 
@@ -54,4 +58,4 @@ Add a `duplicate_of` column: rows about the same question as an earlier row. Add
 
 ## Report (paste back)
 
-`00-report.md` in the scratch folder: gate results; Part 1 section-by-section done/not-done with anything that could not be determined from the live environment; Part 2 manifest summary and the metadata counts; Part 3 class tallies and the duplicate pairs; a list of every file written. Then stop. Nothing committed, nothing changed.
+`00-report.md` in the output folder: gate results; Part 1 section-by-section done/not-done with anything that could not be determined from the live environment; Part 2 manifest summary and the metadata counts; Part 3 class tallies and the duplicate pairs; a list of every file written. Then stop. Nothing committed, nothing changed.
